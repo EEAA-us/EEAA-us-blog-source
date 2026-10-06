@@ -1,0 +1,35 @@
+.cover-contour-preview {
+  position: absolute;
+  inset: 18px 0 0;
+  color: var(--ui-card);
+}
+.cover-contour-preview .cover-wave-layers {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.cover-contour-preview .page-cover-wave {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  max-width: none;
+  filter: none;
+  animation: none;
+}
+.cover-contour-preview :is(.page-cover-wave-far, .page-cover-wave-rear) {
+  opacity: 0.25;
+  transform: translateX(-10%);
+}
+.cover-contour-preview .page-cover-wave-back {
+  opacity: 0.35;
+  transform: translateX(-18%);
+}
+.cover-contour-preview .page-cover-wave-middle {
+  opacity: 0.55;
+  transform: translateX(-32%);
+}
+.cover-contour-preview .page-cover-wave-front {
+  opacity: 0.9;
+}

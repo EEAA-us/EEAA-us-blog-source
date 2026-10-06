@@ -1,0 +1,9 @@
+/* Local system families; custom font files must include their own license. */
+:root {
+  --font-geist-sans: system-ui, sans-serif;
+  --font-geist-mono: ui-monospace, monospace;
+  --font-noto-sans-sc: "Microsoft YaHei", "PingFang SC", sans-serif;
+  --font-noto-serif-sc: "SimSun", "Songti SC", serif;
+  --font-zcool-kuaile: "Yuanti SC", "Microsoft YaHei", sans-serif;
+  --font-lxgw-wenkai: "KaiTi", "STKaiti", serif;
+}

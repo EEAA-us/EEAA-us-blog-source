@@ -1,0 +1,5 @@
+/* System font preview; no bundled font files are required. */
+.font-sample-modern { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; }
+.font-sample-book { font-family: "SimSun", "Songti SC", serif; }
+.font-sample-handwritten { font-family: "KaiTi", "STKaiti", serif; }
+.font-sample-rounded { font-family: "Yuanti SC", "Microsoft YaHei", sans-serif; }

@@ -1,0 +1,71 @@
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
+import { motion } from "framer-motion";
+import type { Photo } from "@/data/photos";
+
+interface PhotoCardProps {
+  photo: Photo;
+  onClick: () => void;
+}
+
+export default function PhotoCard({ photo, onClick }: PhotoCardProps) {
+  const [loaded, setLoaded] = useState(false);
+
+  const isLandscape = photo.orientation === "landscape";
+  const imageRatio = isLandscape ? "aspect-[4/3]"
+    : photo.orientation === "square" ? "aspect-square" : "aspect-[4/5]";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.15 }}
+      onClick={onClick}
+      className="relative cursor-pointer group break-inside-avoid mb-3 md:mb-5"
+      style={{ transformOrigin: "center center" }}
+    >
+      {/* 照片外框 */}
+      <div className="relative bg-white dark:bg-slate-800 p-2 pb-6 md:p-2.5 md:pb-8 rounded-sm shadow-lg dark:shadow-black/30 group-hover:shadow-2xl transition-shadow duration-300">
+        {/* 照片 */}
+        <div className={`relative overflow-hidden rounded-[1px] ${imageRatio}`}>
+          <Image
+            src={photo.url}
+            unoptimized={photo.url.startsWith("/images/games/") || photo.url.startsWith("/images/anime-stills/") || photo.url.startsWith("/images/article-covers/")}
+            alt={photo.caption || "照片"}
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 260px"
+            className={`object-cover transition-transform duration-500 group-hover:scale-105 ${
+              loaded ? "opacity-100" : "opacity-0"
+            }`}
+            onLoad={() => setLoaded(true)}
+          />
+          {!loaded && (
+            <div
+              className={`w-full bg-slate-200 dark:bg-slate-700 animate-pulse ${
+                imageRatio
+              }`}
+            />
+          )}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+        </div>
+
+        {/* caption */}
+        {photo.caption && (
+          <div className="absolute bottom-1.5 left-0 right-0 text-center">
+            <span className="text-xs text-slate-400 dark:text-slate-500 font-serif italic tracking-wide">
+              {photo.caption}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* 胶带装饰 */}
+      <div
+        className="absolute -top-2 left-2 md:left-3 w-8 h-3 md:w-10 md:h-4 bg-amber-200/60 dark:bg-amber-300/30 rounded-sm rotate-[-6deg] pointer-events-none"
+        style={{ backdropFilter: "blur(2px)" }}
+      />
+    </motion.div>
+  );
+}
