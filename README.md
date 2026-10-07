@@ -4,6 +4,18 @@
 
 基于 Next.js、FastAPI 和 Vue 构建。访客浏览站点，站长通过管理后台编辑内容；站点名称、个人介绍和外观可按自己的需要配置。
 
+## 功能概览
+
+| 部分 | 提供的功能 |
+| --- | --- |
+| 文章阅读 | Markdown 正文、代码高亮、文章搜索与分类筛选 |
+| 外观调整 | 配色、静态封面、轮播封面、视频/GIF 动态封面与访客外观偏好 |
+| 内容展示 | 相册与照片预览、项目展示、关于页与个人介绍 |
+| 内容管理 | 文章编辑、草稿/发布/归档状态、分类标签、相册与图片上传 |
+| 可选扩展 | 音乐、桌宠与互动工具；部分功能需要额外素材或外部服务 |
+
+项目适合维护个人记录、技术文章和作品展示。访客以浏览为主，内容由站长管理。功能的配置条件见[基础素材与可选功能](#基础素材与可选功能)。
+
 ## 效果参考
 
 [个人博客示例](https://shiguang-blog-five.vercel.app/)：基于本项目搭建的个人站点，可参考页面布局、动态封面与整体视觉效果。
@@ -28,7 +40,14 @@
 
 ## 本地开发
 
-本轮实际使用 Node.js 24、Python 3.13 和 pnpm 12.3.4 验证。管理后台声明支持 pnpm 9 及以上；新安装建议使用已验证的版本。根目录的 `package-lock.json` 是前台依赖的锁文件；管理后台使用自己的 `pnpm-lock.yaml`。首次安装依赖：
+已验证的开发环境为 Node.js 24、Python 3.13 和 pnpm 12.3.4。管理后台声明支持 pnpm 9 及以上；新安装建议使用已验证的版本。先获取源码：
+
+```sh
+git clone https://github.com/EEAA-us/shiguang-blog-source.git
+cd shiguang-blog-source
+```
+
+也可以下载 [Releases](https://github.com/EEAA-us/shiguang-blog-source/releases) 中的源码包，解压后进入项目目录。根目录的 `package-lock.json` 是前台依赖的锁文件；管理后台使用自己的 `pnpm-lock.yaml`。首次安装依赖：
 
 ```sh
 npm ci
@@ -113,9 +132,40 @@ pnpm build
 
 构建文件由 FastAPI 的 `/admin/` 路径提供。根目录前台可用 `npm run build` 构建；运行 `npm start` 前应按目标环境配置后端地址与内容模式。
 
+### 首次使用
+
+1. 按上述步骤启动三个服务，访问 `http://localhost:3000` 查看前台，在 `http://localhost:8849` 使用自己创建的管理员账号登录后台。
+2. 修改 `siteConfig.ts` 中的站点名称、作者、个人介绍与封面；关于页正文在 `app/about/about.md`。修改源码配置后，重新构建已部署的前台才能生效。
+3. 在后台“文章管理”中新建文章，填写标题与正文，可设置分类、标签和封面。先以“草稿”保存，准备公开时选择“已发布”并保存。
+4. 在前台文章列表检查自己的内容。动态内容模式下从后端读取；公开快照模式下，需要重新导出并发布才能更新线上文章。
+
+初始文章、项目与相册内容为空或使用基础占位素材，先添加自己的内容再分享站点。
+
+## 常用配置
+
+| 位置 | 用途 |
+| --- | --- |
+| `siteConfig.ts` | 站点名称、作者、个人介绍、封面、社交链接与源码仓库入口 |
+| `siteConfig.ts` 的 `initialAppearance` | 初次访问与重置偏好时的封面模式、动态素材地址与桌宠默认值 |
+| `app/about/about.md` | 关于页正文 |
+| `app/projects/projectsData.ts` | 前台项目展示列表，初始为空 |
+| `backend/.env` | 后端密钥、数据库、允许访问的来源与上传存储配置 |
+| 后台“博客封面与素材”与“博客默认外观” | 站点配置、媒体目录与默认外观；公开快照模式下需重新发布 |
+
+后台维护的配置保存在数据库中；`siteConfig.ts` 提供源码默认值，两者不会自动相互改写。前台项目列表也不会自动从后台项目管理同步。已保存的访客外观偏好可能优先于新的默认值，可通过页面的重置偏好入口查看默认效果。
+
 ## 内容与发布模式
 
-默认前台开发模式通过本机后端读取动态内容。静态发布模式需要先用后端导出公开内容快照，并在发布构建中使用 `NEXT_PUBLIC_CONTENT_MODE=published`。项目提供 `npm run publish:prepare` 和 `npm run publish:site` 入口；它们涉及快照导出和独立发布流程，细节与所需环境变量以 `scripts/publish-site.mjs` 为准。不要把本地数据库或未经筛选的上传目录复制到静态站点。
+| 模式 | 内容如何更新 | 需要运行什么 |
+| --- | --- | --- |
+| 动态内容模式 | 前台通过后端读取文章等内容，后台保存后可重新加载查看 | Next.js 前台与 FastAPI 后端；站长使用 Vue 管理后台 |
+| 公开快照模式 | 将后端公开内容导出到独立前台发布目录，内容改动后重新发布 | 支持 Next.js 的托管环境；数据库与管理后台保留在单独的管理环境中 |
+
+默认开发模式的 `/api` 与 `/uploads` 转发到 `127.0.0.1:8000`。如果前后端分别部署在不同主机，需要在 `next.config.ts` 调整转发目标，并核对后端 `CORS_ORIGINS` 与上传文件的访问地址。`siteConfig.apiBaseUrl` 控制浏览器内容 API 的请求前缀，不能代替所有服务端转发配置；线上前台的本机地址指托管主机。
+
+公开快照模式使用 `NEXT_PUBLIC_CONTENT_MODE=published`。完成本地后端与内容配置后，在项目根目录运行 `npm run publish:prepare`，会导出公开内容、准备独立目录并执行前台构建；输出中的 `stage` 是准备好的目录。这个命令只准备发布文件，不推送仓库或切换线上站点。公开快照指内容来源，产物仍需按 Next.js 项目部署。
+
+`npm run publish:site` 是 GitHub、Vercel 和云端统计配套的自动发布流程，需要自己的部署仓库、平台凭据、站点地址与统计服务配置。所需变量在 [scripts/publish-site.mjs](scripts/publish-site.mjs) 中集中检查；没有这些配置时不会完成上线。仅运行 `npm run build` 也不会自动部署网站。不要把本地数据库或未经筛选的上传目录复制到公开发布目录。
 
 导航头像旁的 GitHub 图标、首页个人卡片和关于页的“开源项目”使用同一个仓库地址，默认指向本项目。可在 `siteConfig.ts` 修改，或通过 `NEXT_PUBLIC_SOURCE_REPOSITORY_URL` 覆盖；设为空字符串时隐藏入口。后续版本沿用同一仓库和 Releases。不要把私有部署仓库当作公开源码仓库。
 
@@ -134,3 +184,5 @@ pnpm build
 ## 开发检查
 
 安装前后台依赖后，在根目录运行 `node --test scripts/tests/*.test.mjs`、`npx next typegen`、`npx tsc --noEmit`、`npm run lint` 和 `npm run build`；后台执行 `pnpm typecheck`、`pnpm build`。后端隔离测试使用随机测试密钥和临时 SQLite，见 `.github/workflows/ci.yml`。不使用真实数据库或重置内容来验证代码。
+
+问题反馈和改进建议可提交到 [Issues](https://github.com/EEAA-us/shiguang-blog-source/issues)。报告问题时说明操作步骤、运行环境与错误信息，隐去账号、密钥和私人内容；提交代码改动时说明影响范围与相关检查结果。
