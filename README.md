@@ -6,9 +6,18 @@
 
 ## 效果参考
 
-[AA·EE 的博客](https://shiguang-blog-five.vercel.app/)使用本项目搭建，可参考页面布局、动态封面与整体视觉效果。
+[在线示例](https://shiguang-blog-five.vercel.app/)：使用本项目搭建，可参考页面布局、动态封面与整体视觉效果。
 
 参考站点使用了站长自己的内容与素材。开源包提供基础占位素材，动态封面与桌宠所需资源由使用者自行配置，详见[基础素材与可选功能](#基础素材与可选功能)。
+
+## 参考与致谢
+
+本项目参考了 Shirone 的整体框架与设计，并从 Kirameku 借鉴功能思路。感谢这两个项目及其贡献者的开源工作。
+
+- **Shirone**：[开源仓库](https://github.com/LyraVoid/Shirone) · [官方文档](https://docs.shirone.mysqil.com/) · [演示网站](https://shirone.akatsuki.codes/)
+- **Kirameku**：[开源仓库](https://github.com/Xinghongia/Kirameku) · [演示网站](https://boke.hiromu.top)
+
+管理后台基于 PureAdmin 上游模板，来源与许可说明见 [NOTICE.md](NOTICE.md)。
 
 ## 组成部分
 
