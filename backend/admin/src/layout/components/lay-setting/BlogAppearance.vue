@@ -149,7 +149,7 @@ async function chooseFile(event: Event) {
 <template>
   <section class="blog-appearance-settings">
     <div class="appearance-intro">
-      <span>时光博客 / 我的工作空间</span>
+      <span>个人博客 / 我的工作空间</span>
       <h3>把后台调成喜欢的样子</h3>
       <p>只调整你当前浏览器里的管理后台，不会修改博客默认外观。</p>
       <p>访客仍可在博客里独立调整背景、颜色和字体，这里的设置不会限制他们。</p>

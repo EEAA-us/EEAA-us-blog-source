@@ -1,4 +1,4 @@
-"""Kirameku Blog 一键启动脚本"""
+"""Personal blog 一键启动脚本"""
 
 import webbrowser
 import uvicorn
@@ -7,7 +7,7 @@ PORT = 8000
 
 
 def main():
-    print(f"🚀 Kirameku Backend starting on http://localhost:{PORT}")
+    print(f"🚀 Personal blog backend starting on http://localhost:{PORT}")
     print(f"   Admin Panel: http://localhost:{PORT}/admin")
     print(f"   API Docs:    http://localhost:{PORT}/docs")
     print()

@@ -157,7 +157,7 @@ onMounted(() => onSearch());
 <template>
   <div class="p-4">
     <header class="blog-settings-heading">
-      <span>时光博客 / 博客内容设置</span>
+      <span>个人博客 / 博客内容设置</span>
       <h1>博客封面与素材</h1>
       <p>
         这里管理访客在博客外观面板里可选的封面素材。保存后刷新本机博客查看；公开网站重新发布后生效。

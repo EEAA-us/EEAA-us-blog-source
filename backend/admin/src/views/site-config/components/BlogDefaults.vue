@@ -571,7 +571,7 @@ onMounted(() => {
   <section v-loading="loading" class="blog-defaults">
     <header>
       <div>
-        <span>时光博客 / 博客默认外观</span>
+        <span>个人博客 / 博客默认外观</span>
         <h1>给小站一个初始模样</h1>
         <p>
           访客第一次进入，或点击“恢复默认”时使用。访客自己的配色、字体和背景设置仍然优先，不会被强制覆盖。

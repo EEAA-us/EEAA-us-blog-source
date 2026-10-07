@@ -31,7 +31,7 @@ const DEFAULT_MD = `# 📝 在线 Markdown 编辑器
 function hello(name) {
   console.log(\`Hello, \${name}!\`);
 }
-hello("Kirameku");
+hello("个人博客");
 \`\`\`
 
 行内代码 \`const x = 42\` 也可以。
@@ -55,7 +55,7 @@ hello("Kirameku");
 
 ### 链接与图片
 
-[Kirameku 博客](https://example.com)
+[个人博客](https://example.com)
 
 ### 数学公式（行内）
 

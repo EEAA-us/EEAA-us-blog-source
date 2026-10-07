@@ -1,6 +1,6 @@
 {
-  "name": "Kirameku",
-  "version": "0.1.0",
+  "name": "personal-blog",
+  "version": "0.1.1",
   "private": true,
   "scripts": {
     "dev": "next dev",

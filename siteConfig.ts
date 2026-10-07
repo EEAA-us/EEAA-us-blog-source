@@ -1,7 +1,7 @@
 // Template defaults. Personal content belongs in your local configuration and database.
 export const retiredHeroImages: string[] = [];
 export const siteConfig = {
-  title: "时光博客", url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+  title: "个人博客", url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
   authorName: "博客作者", bio: "记录与分享。", heroSubtitles: ["记录与分享。"],
   avatarUrl: "/images/avatar.png", avatarVideo: "", avatarSource: "",
   heroImage: "/images/cover.webp", heroImages: ["/images/cover.webp"],

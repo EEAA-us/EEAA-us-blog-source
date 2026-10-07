@@ -129,7 +129,7 @@ def get_capabilities() -> dict:
 
 if __name__ == "__main__":
     if "--help" in sys.argv[1:] or "-h" in sys.argv[1:]:
-        print("""Kirameku local blog MCP server (stdio)
+        print("""Personal blog MCP server (stdio)
 
 Required backend environment:
   BLOG_AI_READ_TOKEN       Local read credential, at least 32 characters

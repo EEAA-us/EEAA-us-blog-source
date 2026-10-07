@@ -9,7 +9,7 @@ const fadeIn = {
 };
 
 const EXAMPLE_JSON = `{
-  "blog": "Kirameku",
+  "blog": "个人博客",
   "version": "1.0",
   "features": [
     "文章系统",

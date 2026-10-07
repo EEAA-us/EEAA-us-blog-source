@@ -12,7 +12,7 @@ export default defineFakeRoute([
           username: "admin",
           nickname: "管理员",
           phone: "15888886789",
-          email: "admin@kirameku.com",
+          email: "admin@example.com",
           sex: 0,
           id: 1,
           status: 1,
@@ -25,7 +25,7 @@ export default defineFakeRoute([
           username: "common",
           nickname: "普通用户",
           phone: "18288882345",
-          email: "common@kirameku.com",
+          email: "common@example.com",
           sex: 1,
           id: 2,
           status: 1,
@@ -316,12 +316,12 @@ export default defineFakeRoute([
       code: 0,
       message: "操作成功",
       data: [
-        { name: "杭州总公司", parentId: 0, id: 100, sort: 0, phone: "15888888888", principal: "张三", email: "admin@kirameku.com", status: 1, type: 1, createTime: 1605456000000, remark: "总公司" },
-        { name: "郑州分公司", parentId: 100, id: 101, sort: 1, phone: "15888888888", principal: "李四", email: "zhengzhou@kirameku.com", status: 1, type: 2, createTime: 1605456000000, remark: "分公司" },
-        { name: "研发部门", parentId: 101, id: 103, sort: 1, phone: "15888888888", principal: "王五", email: "dev@kirameku.com", status: 1, type: 3, createTime: 1605456000000, remark: "研发部门" },
-        { name: "市场部门", parentId: 102, id: 108, sort: 1, phone: "15888888888", principal: "赵六", email: "market@kirameku.com", status: 1, type: 3, createTime: 1605456000000, remark: "市场部门" },
-        { name: "深圳分公司", parentId: 100, id: 102, sort: 2, phone: "15888888888", principal: "孙七", email: "shenzhen@kirameku.com", status: 1, type: 2, createTime: 1605456000000, remark: "分公司" },
-        { name: "测试部门", parentId: 101, id: 105, sort: 3, phone: "15888888888", principal: "周八", email: "test@kirameku.com", status: 0, type: 3, createTime: 1605456000000, remark: "测试部门" }
+        { name: "杭州总公司", parentId: 0, id: 100, sort: 0, phone: "15888888888", principal: "张三", email: "admin@example.com", status: 1, type: 1, createTime: 1605456000000, remark: "总公司" },
+        { name: "郑州分公司", parentId: 100, id: 101, sort: 1, phone: "15888888888", principal: "李四", email: "zhengzhou@example.com", status: 1, type: 2, createTime: 1605456000000, remark: "分公司" },
+        { name: "研发部门", parentId: 101, id: 103, sort: 1, phone: "15888888888", principal: "王五", email: "dev@example.com", status: 1, type: 3, createTime: 1605456000000, remark: "研发部门" },
+        { name: "市场部门", parentId: 102, id: 108, sort: 1, phone: "15888888888", principal: "赵六", email: "market@example.com", status: 1, type: 3, createTime: 1605456000000, remark: "市场部门" },
+        { name: "深圳分公司", parentId: 100, id: 102, sort: 2, phone: "15888888888", principal: "孙七", email: "shenzhen@example.com", status: 1, type: 2, createTime: 1605456000000, remark: "分公司" },
+        { name: "测试部门", parentId: 101, id: 105, sort: 3, phone: "15888888888", principal: "周八", email: "test@example.com", status: 0, type: 3, createTime: 1605456000000, remark: "测试部门" }
       ]
     })
   },

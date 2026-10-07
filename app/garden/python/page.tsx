@@ -31,7 +31,7 @@ print(f"平方数: {squares}")
 
 # 字典操作
 info = {
-    "博客": "Kirameku",
+    "博客": "个人博客",
     "语言": "Python",
     "运行环境": "WebAssembly (Pyodide)"
 }
