@@ -193,10 +193,14 @@ def get_posts(
     return [_post_to_dict(post, session, category_names.get(post.category_id, ""), tags_by_post[post.id]) for post in posts]
 
 
-def get_post_by_slug(session: Session, slug: str) -> dict:
-    post = session.exec(select(Post).where(Post.slug == slug)).first()
-    if not post:
+def _require_visible_post(post: Post | None, include_unpublished: bool = False) -> Post:
+    if post is None or (not include_unpublished and post.status != "published"):
         raise HTTPException(status_code=404, detail="文章不存在")
+    return post
+
+
+def get_post_by_slug(session: Session, slug: str, *, include_unpublished: bool = False) -> dict:
+    post = _require_visible_post(session.exec(select(Post).where(Post.slug == slug)).first(), include_unpublished)
     post.views += 1
     session.add(post)
     session.commit()
@@ -204,10 +208,8 @@ def get_post_by_slug(session: Session, slug: str) -> dict:
     return _post_to_dict(post, session)
 
 
-def get_post_by_id(session: Session, post_id: int) -> dict:
-    post = session.get(Post, post_id)
-    if not post:
-        raise HTTPException(status_code=404, detail="文章不存在")
+def get_post_by_id(session: Session, post_id: int, *, include_unpublished: bool = False) -> dict:
+    post = _require_visible_post(session.get(Post, post_id), include_unpublished)
     return _post_to_dict(post, session)
 
 
@@ -310,9 +312,7 @@ def count_posts(
 
 
 def toggle_like(session: Session, post_id: int, unlike: bool = False) -> dict:
-    post = session.get(Post, post_id)
-    if not post:
-        raise HTTPException(404, "文章不存在")
+    post = _require_visible_post(session.get(Post, post_id))
     post.likes = max(0, post.likes + (-1 if unlike else 1))
     session.add(post)
     session.commit()

@@ -4,14 +4,14 @@ from sqlmodel import Session
 from app.deps import get_session
 from app.schemas import TagCreate, TagUpdate, TagOut
 from app.services import tag_service
-from app.deps import get_current_user
+from app.deps import get_current_user, get_optional_current_user
 
 router = APIRouter(prefix="/api/tags", tags=["标签"])
 
 
 @router.get("", response_model=list[TagOut])
-def list_tags(session: Session = Depends(get_session)):
-    return tag_service.get_tags(session)
+def list_tags(session: Session = Depends(get_session), owner: dict | None = Depends(get_optional_current_user)):
+    return tag_service.get_tags(session, published_only=owner is None)
 
 
 @router.post("", response_model=TagOut)

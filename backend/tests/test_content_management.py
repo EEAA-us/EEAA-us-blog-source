@@ -9,7 +9,7 @@ from sqlalchemy import event
 from sqlmodel import SQLModel, Session, create_engine, select
 
 from app.api import albums, auth, bookmarks, categories, posts, tags
-from app.deps import get_current_user, get_session
+from app.deps import get_current_user, get_optional_current_user, get_session
 from app.models import Photo, Post, PostTag, User
 from app.utils.auth import create_token, decode_token, hash_password
 from app.models.bookmark import BookmarkSite
@@ -25,6 +25,7 @@ class ContentManagementTests(unittest.TestCase):
             self.app.include_router(module.router)
         self.app.dependency_overrides[get_session] = lambda: self.session
         self.app.dependency_overrides[get_current_user] = lambda: {"sub": "admin", "admin": True}
+        self.app.dependency_overrides[get_optional_current_user] = lambda: {"sub": "admin", "admin": True}
         self.client = TestClient(self.app, raise_server_exceptions=False)
 
     def tearDown(self):

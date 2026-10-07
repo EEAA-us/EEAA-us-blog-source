@@ -1,13 +1,18 @@
 from datetime import datetime
-from sqlmodel import Session, select
+from sqlmodel import Session, select, func
 from fastapi import HTTPException
 
 from app.models import Category, Post
 from app.schemas import CategoryCreate, CategoryUpdate
 
 
-def get_categories(session: Session) -> list[Category]:
-    return list(session.exec(select(Category).order_by(Category.sort)).all())
+def get_categories(session: Session, *, published_only: bool = False) -> list[Category] | list[dict]:
+    categories = list(session.exec(select(Category).order_by(Category.sort)).all())
+    if not published_only:
+        return categories
+    counts = dict(session.exec(select(Post.category_id, func.count(Post.id))
+                               .where(Post.status == "published").group_by(Post.category_id)).all())
+    return [{**category.model_dump(), "post_count": counts.get(category.id, 0)} for category in categories]
 
 
 def get_category_by_id(session: Session, cat_id: int) -> Category:

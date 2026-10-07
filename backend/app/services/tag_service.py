@@ -1,12 +1,19 @@
-from sqlmodel import Session, select
+from sqlmodel import Session, select, func
 from fastapi import HTTPException
 
-from app.models import Tag, PostTag
+from app.models import Tag, PostTag, Post
 from app.schemas import TagCreate, TagUpdate
 
 
-def get_tags(session: Session) -> list[Tag]:
-    return list(session.exec(select(Tag).order_by(Tag.post_count.desc())).all())
+def get_tags(session: Session, *, published_only: bool = False) -> list[Tag] | list[dict]:
+    tags = list(session.exec(select(Tag).order_by(Tag.post_count.desc())).all())
+    if not published_only:
+        return tags
+    counts = dict(session.exec(select(PostTag.tag_id, func.count(PostTag.post_id))
+                               .join(Post, Post.id == PostTag.post_id)
+                               .where(Post.status == "published").group_by(PostTag.tag_id)).all())
+    return sorted(({**tag.model_dump(), "post_count": counts.get(tag.id, 0)} for tag in tags),
+                  key=lambda tag: -tag["post_count"])
 
 
 def create_tag(session: Session, data: TagCreate) -> Tag:

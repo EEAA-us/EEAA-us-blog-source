@@ -35,11 +35,18 @@ def decode_token(token: str) -> dict:
         raise HTTPException(status_code=401, detail="无效的令牌")
 
 
-def get_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(security)) -> dict:
-    # Preserve the API's existing missing-credentials contract across FastAPI upgrades.
+def get_optional_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(security)) -> dict | None:
     if credentials is None:
-        raise HTTPException(status_code=403, detail="Not authenticated")
+        return None
     user = decode_token(credentials.credentials)
     if user.get("admin") is not True:
         raise HTTPException(status_code=403, detail="仅站长可以管理博客")
+    return user
+
+
+def get_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(security)) -> dict:
+    # Preserve the existing required-login contract while sharing token validation.
+    user = get_optional_current_user(credentials)
+    if user is None:
+        raise HTTPException(status_code=403, detail="Not authenticated")
     return user

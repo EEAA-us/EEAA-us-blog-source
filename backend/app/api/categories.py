@@ -4,14 +4,14 @@ from sqlmodel import Session
 from app.deps import get_session
 from app.schemas import CategoryCreate, CategoryUpdate, CategoryOut
 from app.services import category_service
-from app.deps import get_current_user
+from app.deps import get_current_user, get_optional_current_user
 
 router = APIRouter(prefix="/api/categories", tags=["分类"])
 
 
 @router.get("", response_model=list[CategoryOut])
-def list_categories(session: Session = Depends(get_session)):
-    return category_service.get_categories(session)
+def list_categories(session: Session = Depends(get_session), owner: dict | None = Depends(get_optional_current_user)):
+    return category_service.get_categories(session, published_only=owner is None)
 
 
 @router.post("", response_model=CategoryOut)

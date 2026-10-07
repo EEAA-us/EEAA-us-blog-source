@@ -141,7 +141,7 @@ def main() -> None:
                 is_pinned=spec.slug == "stm32-study-guide",
             )
             if existing and existing.id is not None:
-                current = post_service.get_post_by_id(session, existing.id)
+                current = post_service.get_post_by_id(session, existing.id, include_unpublished=True)
                 if (
                     all(current[key] == values[key] for key in ("title", "description", "content", "status", "is_pinned"))
                     and existing.category_id == category.id
