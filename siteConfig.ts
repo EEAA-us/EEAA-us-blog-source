@@ -8,7 +8,7 @@ export const siteConfig = {
   heroImageLibrary: [{ url: "/images/cover.webp", name: "默认封面", category: "covers" }],
   useGradient: false, themeColors: ["#a18cd1", "#fbc2eb", "#a1c4fd", "#c2e9fb"],
   bgImages: ["/images/cover.webp"], defaultPostCover: "/images/cover.webp", photoWallImage: "/images/cover.webp",
-  cloudMusicPlaylistId: "", cloudMusicIds: [] as string[], apiBaseUrl: "", repositoryUrl: process.env.NEXT_PUBLIC_SOURCE_REPOSITORY_URL ?? "https://github.com/EEAA-us/shiguang-blog-source",
+  cloudMusicPlaylistId: "", cloudMusicIds: [] as string[], apiBaseUrl: "", repositoryUrl: process.env.NEXT_PUBLIC_SOURCE_REPOSITORY_URL ?? "https://github.com/EEAA-us/EEAA-us-blog-source",
   initialAppearance: {
     heroMode: "fixed" as "fixed" | "animated" | "slideshow",
     heroMediaKind: "video" as "video" | "gif", heroMediaUrl: "",

@@ -43,11 +43,11 @@
 已验证的开发环境为 Node.js 24、Python 3.13 和 pnpm 12.3.4。管理后台声明支持 pnpm 9 及以上；新安装建议使用已验证的版本。先获取源码：
 
 ```sh
-git clone https://github.com/EEAA-us/shiguang-blog-source.git
-cd shiguang-blog-source
+git clone https://github.com/EEAA-us/EEAA-us-blog-source.git
+cd EEAA-us-blog-source
 ```
 
-也可以下载 [Releases](https://github.com/EEAA-us/shiguang-blog-source/releases) 中的源码包，解压后进入项目目录。根目录的 `package-lock.json` 是前台依赖的锁文件；管理后台使用自己的 `pnpm-lock.yaml`。首次安装依赖：
+也可以下载 [Releases](https://github.com/EEAA-us/EEAA-us-blog-source/releases) 中的源码包，解压后进入项目目录。根目录的 `package-lock.json` 是前台依赖的锁文件；管理后台使用自己的 `pnpm-lock.yaml`。首次安装依赖：
 
 ```sh
 npm ci
@@ -187,4 +187,4 @@ pnpm build
 
 安装前后台依赖后，在根目录运行 `node --test scripts/tests/*.test.mjs`、`npx next typegen`、`npx tsc --noEmit`、`npm run lint` 和 `npm run build`；后台执行 `pnpm typecheck`、`pnpm build`。后端隔离测试使用随机测试密钥和临时 SQLite，见 `.github/workflows/ci.yml`。不使用真实数据库或重置内容来验证代码。
 
-问题反馈和改进建议可提交到 [Issues](https://github.com/EEAA-us/shiguang-blog-source/issues)。报告问题时说明操作步骤、运行环境与错误信息，隐去账号、密钥和私人内容；提交代码改动时说明影响范围与相关检查结果。
+问题反馈和改进建议可提交到 [Issues](https://github.com/EEAA-us/EEAA-us-blog-source/issues)。报告问题时说明操作步骤、运行环境与错误信息，隐去账号、密钥和私人内容；提交代码改动时说明影响范围与相关检查结果。
