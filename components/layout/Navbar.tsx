@@ -12,6 +12,7 @@ import { useTheme } from "@/components/providers/ThemeProvider";
 import AppearancePanel from "@/components/ui/AppearancePanel";
 import ArticleSearch from "@/components/ui/ArticleSearch";
 import RepositoryLink from "@/components/ui/RepositoryLink";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 import { usePageNavigation } from "@/lib/use-page-navigation";
 import { isPublishedContentMode, readPublishedIndex } from "@/lib/published-content";
 import { useTranslation } from "@/lib/i18n";
@@ -23,8 +24,6 @@ import {
   Clock,
   Music,
   User,
-  Sun,
-  Moon,
   Menu,
   X,
   Settings2,
@@ -54,7 +53,7 @@ export default function Navbar() {
     router.prefetch(href);
     if (isPublishedContentMode) void readPublishedIndex().catch(() => {});
   };
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const { tx } = useTranslation();
   const navigationTextStyle = {
     color: "var(--ui-on-surface)",
@@ -287,17 +286,7 @@ export default function Navbar() {
               <Toolbox navigationTextStyle={navigationTextStyle} />
               <ArticleSearch />
               <div id="reading-layout-slot" className="flex items-center gap-1" />
-              <button
-                onClick={toggleTheme}
-                style={navigationTextStyle}
-                className="p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors"
-              >
-                {theme === "dark" ? (
-                  <Sun className="w-5 h-5" />
-                ) : (
-                  <Moon className="w-5 h-5" />
-                )}
-              </button>
+              <ThemeToggle style={navigationTextStyle} />
 
               {/* Settings Button */}
               <div className="relative" ref={settingsRef} onKeyDown={(event) => {

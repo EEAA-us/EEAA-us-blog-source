@@ -407,4 +407,33 @@ html:has(.article-search-dialog[open]) { overflow: hidden; }
   .home-layout .home-photo-preview { min-height: 320px; }
 }
 
-
+/* Only explicit theme clicks enable surface interpolation. No layout/blur animation. */
+html.theme-switching :is(body, .site-appearance, .theme-background, .theme-background > div,
+  .editorial-panel, .glass-card, .site-nav, .site-nav a, .site-nav button, .site-nav span,
+  .appearance-panel, .article-search-dialog, .toolbox-panel, .theme-primary-button, .theme-soft-button) {
+  transition-property: background-color, color, border-color, outline-color;
+  transition-duration: 550ms;
+  transition-timing-function: cubic-bezier(.22, 1, .36, 1);
+}
+.theme-toggle { position: relative; isolation: isolate; }
+.theme-toggle-icons { position: relative; display: block; width: 20px; height: 20px; }
+.theme-toggle-icons svg { position: absolute; inset: 0; width: 20px; height: 20px; }
+html.theme-switching .theme-toggle-icons svg { transition: opacity 380ms ease, transform 500ms cubic-bezier(.22, 1, .36, 1); }
+.dark .theme-toggle .theme-toggle-sun,
+html:not(.dark) .theme-toggle .theme-toggle-moon { opacity: 1; transform: rotate(0) scale(1); }
+html:not(.dark) .theme-toggle .theme-toggle-sun { opacity: 0; transform: rotate(100deg) scale(.55); }
+.dark .theme-toggle .theme-toggle-moon { opacity: 0; transform: rotate(-80deg) scale(.55); }
+.theme-toggle::before { content: ""; position: absolute; inset: -5px; z-index: -1; border-radius: 50%; opacity: 0; pointer-events: none; background: radial-gradient(circle, color-mix(in srgb, currentColor 28%, transparent), transparent 72%); }
+html.theme-switching .theme-toggle::before { animation: theme-toggle-glow 600ms ease-out; }
+@keyframes theme-toggle-glow { 0% { opacity: 0; transform: scale(.45); } 30% { opacity: .85; } 100% { opacity: 0; transform: scale(1.3); } }
+html.theme-switching .site-appearance[data-reduce-motion="true"],
+html.theme-switching .site-appearance[data-reduce-motion="true"] * { transition-duration: 0s !important; }
+.site-appearance[data-reduce-motion="true"] .theme-toggle-icons svg { transition: none; }
+.site-appearance[data-reduce-motion="true"] .theme-toggle::before { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  html.theme-switching :is(body, .site-appearance, .theme-background, .theme-background > div,
+    .editorial-panel, .glass-card, .site-nav, .site-nav a, .site-nav button, .site-nav span,
+    .appearance-panel, .article-search-dialog, .toolbox-panel, .theme-primary-button, .theme-soft-button),
+  .theme-toggle-icons svg { transition-duration: 0s !important; }
+  .theme-toggle::before { animation: none !important; }
+}
