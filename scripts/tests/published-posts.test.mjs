@@ -13,6 +13,9 @@ const source = await readFile(path.join(root, "app/api/posts.ts"), "utf8");
 const compiled = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
 }).outputText;
+const compile = text => ts.transpileModule(text, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+const articleCode = compile(await readFile(path.join(root, "lib/published-article.ts"), "utf8"));
+const boundedCode = compile(await readFile(path.join(root, "lib/bounded-request.ts"), "utf8"));
 
 function fixture() {
   return {
@@ -37,8 +40,12 @@ function loadPosts({ statsResponse } = {}) {
     process: { env: { NEXT_PUBLIC_CONTENT_MODE: "published" } },
     URLSearchParams,
     AbortSignal,
+    AbortController,
+    Date,
+    structuredClone,
     fetch: async url => {
       calls.push(String(url));
+      if (String(url).startsWith('/content/posts/')) return { ok: true, json: async () => ({ id: Number(String(url).match(/(\d+)\.json/)[1]), content: "fixture body" }) };
       if (statsResponse instanceof Error) throw statsResponse;
       return statsResponse ?? { ok: true, json: async () => ({ posts: { "1": { views: 101, likes: 12 }, "2": { views: 202, likes: 23 } } }) };
     },
@@ -50,9 +57,14 @@ function loadPosts({ statsResponse } = {}) {
         return structuredClone(result);
       } };
       if (specifier === "@/lib/cloud-stats-client") return { getCloudStatsIdentity: () => "test" };
+      if (specifier === "@/lib/published-article") return article.exports;
       throw new Error(`Unexpected import: ${specifier}`);
     },
   };
+  const bounded = { ...sandbox, exports: {} };
+  vm.runInNewContext(boundedCode, bounded);
+  const article = { ...sandbox, exports: {}, require: () => bounded.exports };
+  vm.runInNewContext(articleCode, article);
   vm.runInNewContext(compiled, sandbox, { filename: "app/api/posts.ts" });
   return { ...sandbox.exports, calls, selections };
 }

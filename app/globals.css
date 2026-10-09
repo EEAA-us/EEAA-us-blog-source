@@ -68,7 +68,7 @@
 /* Keep the scrollable reading outline above the default floating pet controls. */
 @media (min-width: 1100px) {
   body:has([data-live2d-pet]) .reading-outline > aside {
-    max-height: max(8rem, calc(100svh - 30rem));
+    max-height: max(8rem, calc(100svh - 27rem));
   }
 }
 .detail-breadcrumb { display: flex; min-height: 44px; align-items: center; flex-wrap: wrap; gap: .5rem; font-size: 18px; line-height: 1.4; }

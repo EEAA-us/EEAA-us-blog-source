@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import type { Photo } from "@/data/photos";
@@ -10,8 +10,47 @@ interface PhotoCardProps {
   onClick: () => void;
 }
 
+function PhotoImage({ photo, ratio, attempt, onRetry }: { photo: Photo; ratio: string; attempt: number; onRetry: () => void }) {
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+  const image = useRef<HTMLImageElement>(null);
+  const container = useRef<HTMLDivElement>(null);
+  const retrySource = attempt > 0 && photo.url.startsWith("/") && !photo.url.startsWith("//")
+    ? `${photo.url}${photo.url.includes("?") ? "&" : "?"}photo_retry=${attempt}` : photo.url;
+  useEffect(() => {
+    if (status !== "loading") return;
+    // Cached images may already have completed before the component subscribed.
+    if (image.current?.complete && image.current.naturalWidth > 0) {
+      const frame = requestAnimationFrame(() => setStatus("loaded"));
+      return () => cancelAnimationFrame(frame);
+    }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const start = () => { timer ??= setTimeout(() => setStatus("error"), 20_000); };
+    const observer = typeof IntersectionObserver === "undefined" ? null : new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) { start(); observer?.disconnect(); }
+    }, { rootMargin: "150px" });
+    if (observer && container.current) observer.observe(container.current);
+    else start();
+    return () => { observer?.disconnect(); clearTimeout(timer); };
+  }, [status]);
+
+  return <div ref={container} className={`relative overflow-hidden rounded-[1px] ${ratio}`}>
+    <Image ref={image} src={retrySource}
+      unoptimized={photo.url.startsWith("/images/games/") || photo.url.startsWith("/images/anime-stills/") || photo.url.startsWith("/images/article-covers/")}
+      alt={photo.caption || "照片"} fill
+      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 260px"
+      className={`object-cover transition-transform duration-500 group-hover:scale-105 ${status === "loaded" ? "opacity-100" : "opacity-0"}`}
+      onLoad={() => setStatus("loaded")} onError={() => setStatus("error")} />
+    {status === "loading" && <div className={`w-full bg-slate-200 dark:bg-slate-700 animate-pulse ${ratio}`} />}
+    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+    {status === "error" && <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 text-xs text-slate-500" role="status">
+      <span>图片暂未加载</span>
+      <button type="button" className="relative z-10 rounded-md px-3 py-1 text-sky-500 hover:bg-sky-500/10" onClick={event => { event.stopPropagation(); onRetry(); }}>重试</button>
+    </div>}
+  </div>;
+}
+
 export default function PhotoCard({ photo, onClick }: PhotoCardProps) {
-  const [loaded, setLoaded] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   const isLandscape = photo.orientation === "landscape";
   const imageRatio = isLandscape ? "aspect-[4/3]"
@@ -29,27 +68,7 @@ export default function PhotoCard({ photo, onClick }: PhotoCardProps) {
       {/* 照片外框 */}
       <div className="relative bg-white dark:bg-slate-800 p-2 pb-6 md:p-2.5 md:pb-8 rounded-sm shadow-lg dark:shadow-black/30 group-hover:shadow-2xl transition-shadow duration-300">
         {/* 照片 */}
-        <div className={`relative overflow-hidden rounded-[1px] ${imageRatio}`}>
-          <Image
-            src={photo.url}
-            unoptimized={photo.url.startsWith("/images/games/") || photo.url.startsWith("/images/anime-stills/") || photo.url.startsWith("/images/article-covers/")}
-            alt={photo.caption || "照片"}
-            fill
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 260px"
-            className={`object-cover transition-transform duration-500 group-hover:scale-105 ${
-              loaded ? "opacity-100" : "opacity-0"
-            }`}
-            onLoad={() => setLoaded(true)}
-          />
-          {!loaded && (
-            <div
-              className={`w-full bg-slate-200 dark:bg-slate-700 animate-pulse ${
-                imageRatio
-              }`}
-            />
-          )}
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
-        </div>
+        <PhotoImage key={`${photo.url}\0${attempt}`} photo={photo} ratio={imageRatio} attempt={attempt} onRetry={() => setAttempt(value => value + 1)} />
 
         {/* caption */}
         {photo.caption && (

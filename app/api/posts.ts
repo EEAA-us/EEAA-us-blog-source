@@ -2,6 +2,7 @@ import { request, qs } from "./client";
 import { readPublishedSelection } from "@/lib/published-content";
 import { getCloudStatsIdentity } from "@/lib/cloud-stats-client";
 import type { ArticleImageDimensions } from "@/lib/article-markdown";
+import { loadPublishedArticle } from "@/lib/published-article";
 
 const publishedMode = process.env.NEXT_PUBLIC_CONTENT_MODE === "published";
 
@@ -99,19 +100,12 @@ export function getPostBySlug(slug: string) {
     const item = index.posts.find((post) => post.slug === slug);
     if (!item) throw new Error("Article not found");
     return item.id;
-  }).then(async (id) => {
-    const response = await fetch(`/content/posts/${id}.json`);
-    if (!response.ok) throw new Error(`Published article unavailable (${response.status})`);
-    return response.json() as Promise<PostDetail>;
-  });
+  }).then(loadPublishedArticle);
   return request<PostDetail>(`/api/posts/${slug}`);
 }
 
 export function getPostById(postId: number) {
-  if (publishedMode) return fetch(`/content/posts/${postId}.json`).then(async (response) => {
-    if (!response.ok) throw new Error(`Published article unavailable (${response.status})`);
-    return response.json() as Promise<PostDetail>;
-  });
+  if (publishedMode) return loadPublishedArticle(postId);
   return request<PostDetail>(`/api/posts/detail/${postId}`);
 }
 

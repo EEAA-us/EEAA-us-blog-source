@@ -76,8 +76,10 @@ export default function ProjectDetailPage() {
   const [articleResult, setArticleResult] = useState<{ slug: string; data: PostDetail | null } | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const positionedProject = useRef<string | null>(null);
+  const pendingChapterPosition = useRef(false);
   const viewedArticleIds = useRef(new Set<number>());
   const [copied, setCopied] = useState(false);
+  const [articleAttempt, setArticleAttempt] = useState(0);
 
   useEffect(() => {
     if (!project?.categorySlug) return;
@@ -129,6 +131,7 @@ export default function ProjectDetailPage() {
 
   const handleOutlineSelect = (id: string, hasChildren: boolean) => {
     window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
+    if (id !== selectedId) pendingChapterPosition.current = true;
     setSelectedId(id);
     if (hasChildren) {
       setExpandedIds((previous) => {
@@ -143,13 +146,26 @@ export default function ProjectDetailPage() {
   const selectChapter = (item: ProjectOutlineItem) => {
     if (!item.slug || item.slug === selectedSlug) return;
     window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
+    pendingChapterPosition.current = true;
     setSelectedId(item.id);
     if (item.parentId) setExpandedIds((previous) => new Set(previous).add(item.parentId!));
-    document.getElementById("page-content")?.scrollIntoView({
-      block: "start",
-      behavior: preferences.navigationScroll === "smooth" && !reducedMotion ? "smooth" : "instant",
-    });
   };
+
+  // Position after the new chapter (or its error) has mounted, not while the
+  // previous tall article is being replaced by a short loading placeholder.
+  useEffect(() => {
+    if (!pendingChapterPosition.current || loading) return;
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        pendingChapterPosition.current = false;
+        document.getElementById("page-content")?.scrollIntoView({
+          block: "start",
+          behavior: preferences.navigationScroll === "smooth" && !reducedMotion ? "smooth" : "instant",
+        });
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [selectedId, loading, preferences.navigationScroll, reducedMotion]);
 
   useEffect(() => {
     if (!selectedSlug) return;
@@ -162,7 +178,7 @@ export default function ProjectDetailPage() {
         if (active) setArticleResult({ slug: selectedSlug, data: null });
       });
     return () => { active = false; };
-  }, [selectedSlug]);
+  }, [selectedSlug, articleAttempt]);
 
   useEffect(() => {
     const viewedArticle = articleResult && articleResult.slug === selectedSlug ? articleResult.data : null;
@@ -228,7 +244,10 @@ export default function ProjectDetailPage() {
           {loading ? (
             <div className="flex justify-center py-16"><Loader2 className="w-7 h-7 text-sky-500 animate-spin" /></div>
           ) : articleError ? (
-            <p role="alert" className="py-12 text-center text-slate-500">{tx("文章暂时无法加载或尚未发布，请刷新重试。")}</p>
+            <div role="alert" className="py-12 text-center text-slate-500">
+              <p>{tx("文章暂时无法加载或尚未发布，请重试。")}</p>
+              <button type="button" className="mt-3 text-sky-500 hover:underline" onClick={() => { setArticleResult(null); setArticleAttempt(value => value + 1); }}>{tx("重新加载")}</button>
+            </div>
           ) : (
             <>
               <ReadingLayoutSettings shortcut />

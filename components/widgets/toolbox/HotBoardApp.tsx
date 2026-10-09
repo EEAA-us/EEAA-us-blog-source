@@ -25,6 +25,8 @@ const PLATFORMS = [
   { id: "genshin", name: "原神", color: "#e8a946" },
   { id: "honkai", name: "崩坏3", color: "#6c3fa0" },
   { id: "starrail", name: "星铁", color: "#5b7fab" },
+  { id: "overwatch", name: "守望先锋", color: "#ed921b" },
+  { id: "wuthering-waves", name: "鸣潮", color: "#427e79" },
 ];
 
 interface HotItem {
@@ -34,12 +36,15 @@ interface HotItem {
   url: string;
   extra?: Record<string, string>;
   cover?: string;
+  source?: string;
 }
 
 interface HotResult {
   type: string;
   update_time: string;
   list: HotItem[];
+  notice?: string;
+  more_url?: string;
 }
 
 export default function HotBoardApp() {
@@ -61,7 +66,8 @@ export default function HotBoardApp() {
     setResult(null);
     try {
       const data = await withRequestDeadline(controller.signal, 12_000, async signal => {
-        const res = await fetch(`/api/uapis?path=misc/hotboard&type=${type}`, { signal });
+        const isGameTopic = type === "overwatch" || type === "wuthering-waves";
+        const res = await fetch(isGameTopic ? `/api/game-hotboard?type=${type}` : `/api/uapis?path=misc/hotboard&type=${type}`, { signal });
         const json = await res.json();
         if (!res.ok) throw new Error(json.message || "查询失败");
         if (!Array.isArray(json?.list)) throw new Error("热榜数据暂不可用");
@@ -127,6 +133,7 @@ export default function HotBoardApp() {
       {/* 热榜列表 */}
       {result && !loading && (
         <div className="flex-1 overflow-y-auto space-y-0.5">
+          {result.notice && <p className="text-[10px] text-slate-500 mb-2">{result.notice}</p>}
           {result.update_time && (
             <p className="text-[10px] text-slate-400 mb-2">
               {tx("更新于")} {result.update_time}
@@ -158,11 +165,13 @@ export default function HotBoardApp() {
                   {formatHot(item.hot_value)}
                 </span>
               )}
+              {item.source && <span className="text-[9px] text-slate-400 shrink-0">{item.source}</span>}
             </a>
           ))}
           {result.list.length === 0 && (
             <p className="text-xs text-slate-400 text-center py-4">{tx("暂无数据")}</p>
           )}
+          {result.more_url && <a href={result.more_url} target="_blank" rel="noopener noreferrer" className="block py-3 text-center text-xs text-sky-500 hover:underline">查看相关视频</a>}
         </div>
       )}
 
