@@ -11,7 +11,7 @@ const component = ts.transpileModule(source, { compilerOptions: {
   module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX,
 }}).outputText;
 
-function mount({ imageProperties = {} } = {}) {
+function mount({ imageProperties = {}, thumbnails = {} } = {}) {
   const instances = new Map(), pendingEffects = [], timers = new Map(), observers = [];
   let active = null, clock = 0, timerId = 0, rafId = 0;
   const rafs = new Map();
@@ -53,6 +53,7 @@ function mount({ imageProperties = {} } = {}) {
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (name === 'next/image') return { __esModule: true, default: 'img' };
       if (name === 'framer-motion') return { motion: { div: 'div' } };
+      if (name === '@/lib/photo-thumbnail') return { photoThumbnail: url => thumbnails[url] || url };
       throw new Error(`Unexpected import: ${name}`);
     },
   };
@@ -206,4 +207,20 @@ test('changing the URL isolates image state and starts an independent loading de
   assert.equal(fixture.timerCount(), 0);
   fixture.intersect();
   assert.equal(fixture.timerCount(), 1);
+});
+
+test('cards request the small image, fall back once on failure, and keep the original photo for the lightbox', () => {
+  const f = mount({ thumbnails: { '/images/games/a.webp': '/images/photo-thumbnails/small.webp' } });
+  const original = photo('/images/games/a.webp');
+  let clicked = false;
+  f.render(original, () => { clicked = true; });
+  assert.equal(image(f).props.src, '/images/photo-thumbnails/small.webp');
+  image(f).props.onError();
+  f.render(original);
+  assert.equal(image(f).props.src, original.url);
+  image(f).props.onError();
+  f.render(original);
+  assert.ok(retryButton(f));
+  assert.equal(original.url, '/images/games/a.webp');
+  assert.equal(clicked, false);
 });

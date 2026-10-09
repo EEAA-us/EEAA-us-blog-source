@@ -6,6 +6,7 @@ import PhotoCard from "./PhotoCard";
 import type { Photo } from "@/data/photos";
 import { useTranslation } from "@/lib/i18n";
 import { useState } from "react";
+import { photoThumbnail } from "@/lib/photo-thumbnail";
 
 export interface Album {
   id: number;
@@ -63,12 +64,19 @@ export default function AlbumCard({ album, isExpanded, onToggle, onPhotoClick }:
             >
               <div className="relative w-full h-full rounded-xl overflow-hidden shadow-lg ring-1 ring-black/5 dark:ring-white/10">
                 <Image
-                  src={photo.url}
+                  src={photoThumbnail(photo.url)}
                   unoptimized={photo.url.startsWith("/images/games/") || photo.url.startsWith("/images/anime-stills/") || photo.url.startsWith("/images/article-covers/")}
                   alt={photo.caption || album.title}
                   fill
                   className="object-cover"
                   sizes="260px"
+                  onError={event => {
+                    const image = event.currentTarget;
+                    if (image.dataset.originalFallback) return;
+                    image.dataset.originalFallback = "true";
+                    image.srcset = "";
+                    image.src = photo.url;
+                  }}
                 />
               </div>
             </motion.div>

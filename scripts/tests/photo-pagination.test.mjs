@@ -13,6 +13,7 @@ test('large expanded album renders 24 cards per page and preserves full-gallery 
     if (name === 'react/jsx-runtime') return require(name);
     if (name === 'framer-motion') return {motion:{div:'div'},AnimatePresence:'div'};
     if (name === '@/lib/i18n') return {useTranslation:()=>({tx:value=>value})};
+    if (name === '@/lib/photo-thumbnail') return {photoThumbnail:url=>url};
     return {__esModule:true,default:name === './PhotoCard' ? 'photo-card' : 'image'};
   }};
   vm.runInNewContext(ts.transpileModule(readFileSync('components/photos/AlbumCard.tsx','utf8'), {compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText,sandbox);

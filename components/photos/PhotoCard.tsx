@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import type { Photo } from "@/data/photos";
+import { photoThumbnail } from "@/lib/photo-thumbnail";
 
 interface PhotoCardProps {
   photo: Photo;
@@ -12,10 +13,12 @@ interface PhotoCardProps {
 
 function PhotoImage({ photo, ratio, attempt, onRetry }: { photo: Photo; ratio: string; attempt: number; onRetry: () => void }) {
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+  const [useOriginal, setUseOriginal] = useState(false);
   const image = useRef<HTMLImageElement>(null);
   const container = useRef<HTMLDivElement>(null);
-  const retrySource = attempt > 0 && photo.url.startsWith("/") && !photo.url.startsWith("//")
-    ? `${photo.url}${photo.url.includes("?") ? "&" : "?"}photo_retry=${attempt}` : photo.url;
+  const source = useOriginal ? photo.url : photoThumbnail(photo.url);
+  const retrySource = attempt > 0 && source.startsWith("/") && !source.startsWith("//")
+    ? `${source}${source.includes("?") ? "&" : "?"}photo_retry=${attempt}` : source;
   useEffect(() => {
     if (status !== "loading") return;
     // Cached images may already have completed before the component subscribed.
@@ -31,7 +34,7 @@ function PhotoImage({ photo, ratio, attempt, onRetry }: { photo: Photo; ratio: s
     if (observer && container.current) observer.observe(container.current);
     else start();
     return () => { observer?.disconnect(); clearTimeout(timer); };
-  }, [status]);
+  }, [status, source]);
 
   return <div ref={container} className={`relative overflow-hidden rounded-[1px] ${ratio}`}>
     <Image ref={image} src={retrySource}
@@ -39,7 +42,10 @@ function PhotoImage({ photo, ratio, attempt, onRetry }: { photo: Photo; ratio: s
       alt={photo.caption || "照片"} fill
       sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 260px"
       className={`object-cover transition-transform duration-500 group-hover:scale-105 ${status === "loaded" ? "opacity-100" : "opacity-0"}`}
-      onLoad={() => setStatus("loaded")} onError={() => setStatus("error")} />
+      onLoad={() => setStatus("loaded")} onError={() => {
+        if (source !== photo.url) setUseOriginal(true);
+        else setStatus("error");
+      }} />
     {status === "loading" && <div className={`w-full bg-slate-200 dark:bg-slate-700 animate-pulse ${ratio}`} />}
     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
     {status === "error" && <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 text-xs text-slate-500" role="status">

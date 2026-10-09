@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "photos:thumbnails": "node scripts/build-photo-thumbnails.mjs",
     "publish:prepare": "node scripts/publish-site.mjs --prepare-only",
     "publish:site": "node scripts/publish-site.mjs"
   },
