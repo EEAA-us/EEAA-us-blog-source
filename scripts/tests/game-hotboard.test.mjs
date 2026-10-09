@@ -48,49 +48,36 @@ test('Overwatch uses the official weekly forum order and builds validated topic 
   assert.match(result.data.notice, /不是全网热搜/);
 });
 
-test('Wuthering Waves preserves Bilibili rank then appends real aggregate search results without synthetic ranks', async () => {
-  const requested = [];
-  const bilibiliList = Array.from({ length: 93 }, (_, i) => ({ title: `其他视频 ${i + 1}`, url: `https://www.bilibili.com/video/BVother${i}` }));
-  bilibiliList.push({ title: '神迹之下,皆是人心！鸣潮如何诠释文明不屈？', url: 'https://www.bilibili.com/video/BV1mKpx6CEFH', hot_value: '61134播放' });
+test('Wuthering Waves shows only real Bilibili ranks, preserving supplied ranks and source order', async () => {
+  const calls = [];
   const get = fixture(async (url, options) => {
-    requested.push({ url, options });
-    if (url.endsWith('/misc/hotboard?type=bilibili')) return Response.json({ list: bilibiliList });
-    assert.equal(url, 'https://uapis.cn/api/v1/search/aggregate');
-    assert.equal(options.method, 'POST');
-    assert.equal(options.headers['Content-Type'], 'application/json');
-    assert.deepEqual(JSON.parse(options.body), { query: '鸣潮 游戏', sort: 'date' });
-    return Response.json({ results: [
-      { title: '鸣潮游戏启动', url: 'https://www.bilibili.com/video/BV1FfeXzWEnA', publish_time: '2025-08-28T00:00:00Z' },
-      { title: '鸣潮 介绍', url: 'http://www.appchina.com/app/com.kurogame.mingchao' },
-      { title: '其他游戏', url: 'https://example.com/unrelated' },
-      { title: '鸣潮危险链接', url: 'javascript:alert(1)' },
-      { title: '鸣潮重复视频', url: 'https://www.bilibili.com/video/BV1mKpx6CEFH' },
+    calls.push({ url, options });
+    return Response.json({ list: [
+      { title: '其他游戏', url: 'https://example.com/other', index: 1 },
+      { title: '鸣潮新版本', url: 'https://www.bilibili.com/video/BV1rank', index: 42, hot_value: '100播放' },
+      { title: 'Wuthering Waves discussion', url: 'https://www.bilibili.com/video/BV2rank' },
+      { title: '鸣潮重复条目', url: 'https://www.bilibili.com/video/BV1rank', index: 44 },
+      { title: '鸣潮无效链接', url: 'javascript:alert(1)', index: 45 },
     ] });
   });
-
   const result = await get('wuthering-waves');
   assert.equal(result.status, 200);
-  assert.equal(requested.length, 2);
-  const [hot, ...search] = result.data.list;
-  assert.equal(hot.index, 94);
-  assert.equal(hot.source, 'B站全站热榜');
-  assert.equal(hot.title, '神迹之下,皆是人心！鸣潮如何诠释文明不屈？');
-  assert.equal(search.length, 2);
-  assert.ok(search.every(item => item.index === undefined && item.source === 'UAPI 聚合搜索'));
-  assert.equal(search[0].publish_time, '2025-08-28T00:00:00Z');
-  assert.match(result.data.notice, /搜索结果不是热度排名/);
-  assert.match(result.data.notice, /按服务端日期顺序/);
+  assert.equal(calls.length, 1, 'no search query may be issued');
+  assert.equal(calls[0].url, 'https://uapis.cn/api/v1/misc/hotboard?type=bilibili');
+  assert.deepEqual(result.data.list.map(item => item.index), [42, 3]);
+  assert.ok(result.data.list.every(item => item.source === 'B站全站热榜'));
+  assert.match(result.data.notice, /真实榜位/);
+  assert.match(result.data.notice, /并非鸣潮专属排名/);
 });
 
-test('a failed source is disclosed while the remaining real source still renders', async () => {
-  const get = fixture(async url => {
-    if (url.endsWith('/misc/hotboard?type=bilibili')) throw new Error('offline');
-    return Response.json({ results: [{ title: '鸣潮官方版本更新', url: 'https://example.com/news' }] });
-  });
+test('no ranked Wuthering content is an honest empty state rather than search filler', async () => {
+  const get = fixture(async () => Response.json({ list: [
+    { title: '其他游戏', url: 'https://example.com/other' },
+  ] }));
   const result = await get('wuthering-waves');
   assert.equal(result.status, 200);
-  assert.equal(result.data.list.length, 1);
-  assert.match(result.data.notice, /部分来源暂不可用/);
+  assert.equal(result.data.list.length, 0);
+  assert.match(result.data.empty_message, /暂无鸣潮内容/);
 });
 
 test('invalid topic avoids requests; all failed or timed out sources return an error', async () => {

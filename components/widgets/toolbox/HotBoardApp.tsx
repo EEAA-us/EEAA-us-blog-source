@@ -46,6 +46,7 @@ interface HotResult {
   list: HotItem[];
   notice?: string;
   more_url?: string;
+  empty_message?: string;
 }
 
 export default function HotBoardApp() {
@@ -178,9 +179,9 @@ export default function HotBoardApp() {
             </a>
           ))}
           {result.list.length === 0 && (
-            <p className="text-xs text-slate-400 text-center py-4">{tx("暂无数据")}</p>
+            <p className="text-xs text-slate-400 text-center py-4">{result.empty_message || tx("暂无数据")}</p>
           )}
-          {result.more_url && <a href={result.more_url} target="_blank" rel="noopener noreferrer" className="block py-3 text-center text-xs text-sky-500 hover:underline">查看相关视频</a>}
+          {result.more_url && <a href={result.more_url} target="_blank" rel="noopener noreferrer" className="block py-3 text-center text-xs text-sky-500 hover:underline">查看来源榜单</a>}
         </div>
       )}
 

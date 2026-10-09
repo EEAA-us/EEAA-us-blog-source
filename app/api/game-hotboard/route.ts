@@ -14,7 +14,6 @@ type BoardItem = {
   url: string;
   hot_value: string;
   source: string;
-  publish_time?: string;
 };
 
 function safeHttpUrl(value: unknown): string | null {
@@ -54,33 +53,12 @@ async function getOverwatch(signal: AbortSignal): Promise<BoardItem[]> {
 async function getWutheringHotboard(signal: AbortSignal, matches: RegExp): Promise<BoardItem[]> {
   const data = await getJson(`${UAPI}/misc/hotboard?type=bilibili`, signal);
   if (!Array.isArray(data?.list)) throw new Error("B站热榜数据无效");
-  return data.list.flatMap((item: { title?: unknown; url?: unknown; hot_value?: unknown }, position: number) => {
+  return data.list.flatMap((item: { title?: unknown; url?: unknown; hot_value?: unknown; index?: unknown }, position: number) => {
     if (typeof item.title !== "string" || !matches.test(item.title)) return [];
     const url = safeHttpUrl(item.url);
     if (!url) return [];
-    return [{ index: position + 1, title: item.title.trim(), url, hot_value: typeof item.hot_value === "string" ? item.hot_value : "", source: "B站全站热榜" }];
-  });
-}
-
-async function getWutheringSearch(signal: AbortSignal, matches: RegExp): Promise<BoardItem[]> {
-  const response = await fetch(`${UAPI}/search/aggregate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query: "鸣潮 游戏", sort: "date" }),
-    signal,
-  });
-  if (!response.ok) throw new Error("聚合搜索暂不可用");
-  const data = await response.json();
-  if (!Array.isArray(data?.results)) throw new Error("聚合搜索数据无效");
-
-  return data.results.flatMap((item: { title?: unknown; url?: unknown; publish_time?: unknown }) => {
-    if (typeof item.title !== "string" || !item.title.trim() || !matches.test(item.title)) return [];
-    const url = safeHttpUrl(item.url);
-    if (!url) return [];
-    return [{
-      title: item.title.trim(), url, hot_value: "", source: "UAPI 聚合搜索",
-      ...(typeof item.publish_time === "string" && Number.isFinite(Date.parse(item.publish_time)) ? { publish_time: item.publish_time } : {}),
-    }];
+    const index = Number.isSafeInteger(item.index) && Number(item.index) > 0 ? Number(item.index) : position + 1;
+    return [{ index, title: item.title.trim(), url, hot_value: typeof item.hot_value === "string" ? item.hot_value : "", source: "B站全站热榜" }];
   });
 }
 
@@ -108,22 +86,16 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const sources = await Promise.allSettled([
-    withRequestDeadline(signal, DEADLINE_MS, childSignal => getWutheringHotboard(childSignal, topic.matches)),
-    withRequestDeadline(signal, DEADLINE_MS, childSignal => getWutheringSearch(childSignal, topic.matches)),
-  ]);
-  const available = sources.filter((source): source is PromiseFulfilledResult<BoardItem[]> => source.status === "fulfilled");
-  if (available.length === 0) return NextResponse.json({ message: "鸣潮相关内容暂时无法加载，请重试" }, { status: 502 });
-
-  const hotboard = sources[0].status === "fulfilled" ? sources[0].value : [];
-  const search = sources[1].status === "fulfilled" ? sources[1].value : [];
-  const list = uniqueByUrl([...hotboard, ...search]);
-  const partialFailure = available.length < sources.length;
-  return NextResponse.json({
-    type,
-    list,
-    update_time: "",
-    notice: `B站全站热榜命中保留原榜次；其余为UAPI聚合搜索结果（固定关键词“鸣潮 游戏”，按服务端日期顺序）。搜索结果不是热度排名。${partialFailure ? "部分来源暂不可用。" : ""}`,
-    more_url: `https://search.bilibili.com/all?keyword=${encodeURIComponent(topic.keyword)}`,
-  });
+  try {
+    const list = uniqueByUrl(await withRequestDeadline(signal, DEADLINE_MS,
+      childSignal => getWutheringHotboard(childSignal, topic.matches)));
+    return NextResponse.json({
+      type, list, update_time: "",
+      notice: "只展示B站全站热榜中的鸣潮内容，数字保留来源真实榜位，并非鸣潮专属排名。",
+      empty_message: "当前B站全站热榜暂无鸣潮内容，请稍后再看。",
+      more_url: "https://www.bilibili.com/v/popular/rank/all",
+    });
+  } catch {
+    return NextResponse.json({ message: "鸣潮热榜暂时无法加载，请重试" }, { status: 502 });
+  }
 }
