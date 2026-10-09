@@ -14,6 +14,7 @@ export const siteConfig = {
     heroMediaKind: "video" as "video" | "gif", heroMediaUrl: "",
     live2dCharacter: "off" as "firefly" | "furina" | "cyrene" | "march7thQ" | "silverwolf" | "herta" | "off",
   },
+  heroVideoVariants: {} as Record<string, { compact: string; standard: string }>,
   social: { github: "", gitee: "", google: "", email: "", qq: "", wechat: "" },
   buildDate: "2026-10-06T00:00:00+08:00",
   footerBadges: [{ name: "Next.js 16", color: "text-sky-500" }, { name: "React 19", color: "text-cyan-400" }, { name: "Tailwind 4", color: "text-teal-400" }],

@@ -59,13 +59,15 @@ function BrowserBackgroundProvider({ children }: { children: ReactNode }) {
   const changed = useRef({ image: false, blur: false });
   const revision = useRef(0);
   const [bgImage, setImage] = useState(() => {
-    const savedImg = localStorage.getItem("bg-image");
+    let savedImg: string | null = null;
+    try { savedImg = localStorage.getItem("bg-image"); } catch { /* Use the default background. */ }
     return savedImg && validHeroMediaUrl(savedImg)
       ? savedImg
       : siteConfig.bgImages[siteConfig.bgImages.length - 1];
   });
   const [bgBlur, setBlur] = useState(() => {
-    const saved = localStorage.getItem("bg-blur");
+    let saved: string | null = null;
+    try { saved = localStorage.getItem("bg-blur"); } catch { /* Use the default blur. */ }
     return saved === null || !Number.isFinite(Number(saved))
       ? 20
       : Math.min(20, Math.max(0, Number(saved)));

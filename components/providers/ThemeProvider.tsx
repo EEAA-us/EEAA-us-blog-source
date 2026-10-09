@@ -41,7 +41,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       : value;
   const [theme, setThemeState] = useState<Theme>(() => {
     if (typeof window === "undefined") return "dark";
-    const saved = localStorage.getItem("theme");
+    let saved: string | null = null;
+    try { saved = localStorage.getItem("theme"); } catch { /* Use system theme if storage is blocked. */ }
     return saved === "dark" || saved === "light"
       ? saved
       : window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -78,7 +79,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     changedDuringLoad.current = true;
     revision.current += 1;
     setThemeState(newTheme);
-    localStorage.setItem("theme", newTheme);
+    try { localStorage.setItem("theme", newTheme); } catch { /* The session theme still changes. */ }
   };
 
   const toggleTheme = () => {

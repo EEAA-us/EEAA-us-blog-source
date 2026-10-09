@@ -29,13 +29,14 @@ export interface PostDetail extends PostItem {
   image_dimensions?: ArticleImageDimensions;
 }
 
-async function refreshPublishedStats(posts: PostItem[]): Promise<PostItem[]> {
+export async function refreshPublishedStats(posts: PostItem[]): Promise<PostItem[]> {
+  if (!publishedMode || posts.length === 0) return posts;
   const batches: PostItem[][] = [];
   for (let i = 0; i < posts.length; i += 100) batches.push(posts.slice(i, i + 100));
   const stats = await Promise.all(batches.map(async (batch) => {
     try {
       const ids = batch.map((post) => post.id).join(",");
-      const response = await fetch(`/api/posts/stats?ids=${encodeURIComponent(ids)}`);
+      const response = await fetch(`/api/posts/stats?ids=${encodeURIComponent(ids)}`, { signal: AbortSignal.timeout(4000) });
       if (!response.ok) return {} as Record<string, { views: number; likes: number }>;
       const result = await response.json() as { posts?: Record<string, { views: number; likes: number }> };
       return result.posts ?? {};

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -34,22 +34,28 @@ interface PostCardProps {
 
 export default function PostCard({ post, index }: PostCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const [glare, setGlare] = useState({ x: 50, y: 50, opacity: 0 });
+  const glareRef = useRef<HTMLDivElement>(null);
+  const frame = useRef<number | null>(null);
+  const pointer = useRef({ x: 0, y: 0 });
+  useEffect(() => () => { if (frame.current !== null) cancelAnimationFrame(frame.current); }, []);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    setGlare({
-      x: (x / rect.width) * 100,
-      y: (y / rect.height) * 100,
-      opacity: 0.15,
+    pointer.current = { x: e.clientX, y: e.clientY };
+    if (frame.current !== null) return;
+    frame.current = requestAnimationFrame(() => {
+      frame.current = null;
+      if (!cardRef.current || !glareRef.current) return;
+      const rect = cardRef.current.getBoundingClientRect();
+      const x = ((pointer.current.x - rect.left) / Math.max(1, rect.width)) * 100;
+      const y = ((pointer.current.y - rect.top) / Math.max(1, rect.height)) * 100;
+      glareRef.current.style.background = `radial-gradient(circle at ${x}% ${y}%, rgba(255,255,255,0.15), transparent 60%)`;
     });
   };
 
   const handleMouseLeave = () => {
-    setGlare({ x: 50, y: 50, opacity: 0 });
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
+    frame.current = null;
+    if (glareRef.current) glareRef.current.style.background = "none";
   };
 
   const dateStr = post.published_at
@@ -144,10 +150,8 @@ export default function PostCard({ post, index }: PostCardProps) {
 
             {/* 光泽效果不移动卡片或按钮 */}
             <div
+              ref={glareRef}
               className="absolute inset-0 pointer-events-none rounded-3xl transition-opacity duration-200"
-              style={{
-                background: `radial-gradient(circle at ${glare.x}% ${glare.y}%, rgba(255,255,255,${glare.opacity}), transparent 60%)`,
-              }}
             />
           </div>
         </div>

@@ -1,10 +1,27 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useAppearance } from "@/components/providers/AppearanceProvider";
 import { useDeferredMedia } from "./useDeferredMedia";
+import { siteConfig } from "@/siteConfig";
+import { coverVideoSource } from "@/lib/cover-video-source";
 
-function AnimatedVideo({ src, poster, playing }: { src: string; poster: string; playing: boolean }) {
+function subscribeToVideoSize(change: () => void) {
+  const queries = [window.matchMedia("(max-width: 1024px)"), window.matchMedia("(max-width: 1920px)")];
+  queries.forEach(query => query.addEventListener("change", change));
+  return () => queries.forEach(query => query.removeEventListener("change", change));
+}
+
+function VideoForDisplay(props: { src: string; poster: string; playing: boolean }) {
+  const size = useSyncExternalStore(subscribeToVideoSize, () =>
+    window.matchMedia("(max-width: 1024px)").matches ? 1024 : window.matchMedia("(max-width: 1920px)").matches ? 1920 : 3840, () => 0);
+  const [failedVariant, setFailedVariant] = useState(false);
+  const selected = coverVideoSource(props.src, size, siteConfig.heroVideoVariants);
+  const src = failedVariant ? props.src : selected;
+  return <AnimatedVideo key={src} {...props} src={src} onFailure={() => { if (src !== props.src) setFailedVariant(true); }} />;
+}
+
+function AnimatedVideo({ src, poster, playing, onFailure }: { src: string; poster: string; playing: boolean; onFailure: () => void }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -24,7 +41,7 @@ function AnimatedVideo({ src, poster, playing }: { src: string; poster: string; 
     {/* eslint-disable-next-line @next/next/no-img-element */}
     {!failed && <img src={poster} alt="" className="home-cover-image" />}
     <video ref={ref} src={sourceReady ? src : undefined} muted loop playsInline preload={playing && sourceReady ? "auto" : "none"} poster={poster}
-    onCanPlay={() => setReady(true)} onError={() => setFailed(true)}
+    onCanPlay={() => setReady(true)} onError={() => { setFailed(true); onFailure(); }}
     className="home-cover-video" style={{ opacity: ready && !failed ? 1 : 0 }} />
   </>;
 }
@@ -140,7 +157,7 @@ export default function CoverMedia({ image }: { image: string }) {
     {preferences.heroMode === "slideshow" && frame.previous && <img src={frame.previous} alt="" className="home-cover-image" />}
     {/* eslint-disable-next-line @next/next/no-img-element */}
     <img key={current} src={current} alt="" fetchPriority="high" className={`home-cover-image ${preferences.heroMode === "slideshow" && frame.previous ? "home-cover-fade" : ""}`} style={{ animationDuration: `${fadeDuration}ms` }} />
-    {animated && validAnimatedMedia && preferences.heroMediaKind === "video" && <AnimatedVideo key={mediaUrl} src={mediaUrl} poster={preset?.poster ?? image} playing={playing} />}
+    {animated && validAnimatedMedia && preferences.heroMediaKind === "video" && <VideoForDisplay key={mediaUrl} src={mediaUrl} poster={preset?.poster ?? image} playing={playing} />}
     {animated && validAnimatedMedia && preferences.heroMediaKind === "gif" && mediaUrl && playing && <AnimatedImage key={mediaUrl} src={mediaUrl} />}
   </div>;
 }

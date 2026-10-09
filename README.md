@@ -149,6 +149,7 @@ pnpm build
 | --- | --- |
 | `siteConfig.ts` | 站点名称、作者、个人介绍、封面、社交链接与源码仓库入口 |
 | `siteConfig.ts` 的 `initialAppearance` | 初次访问与重置偏好时的封面模式、动态素材地址与桌宠默认值 |
+| `siteConfig.ts` 的 `heroVideoVariants` | 可选的视频适配版本：以原视频地址为键，配置 `compact`（视口≤1024）与 `standard`（≤1920）地址；更大屏幕或未配置时保留原视频，适配版失败回退原视频 |
 | `app/about/about.md` | 关于页正文 |
 | `app/projects/projectsData.ts` | 前台项目展示列表，初始为空 |
 | `backend/.env` | 后端密钥、数据库、允许访问的来源与上传存储配置 |

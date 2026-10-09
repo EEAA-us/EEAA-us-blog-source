@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useEffects } from "@/components/providers/EffectProvider";
+import { createIdleAnimation } from "@/lib/idle-animation";
 
 interface Particle {
   x: number;
@@ -30,7 +31,6 @@ export default function ClickEffect() {
   const { clickEffect } = useEffects();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particles = useRef<Particle[]>([]);
-  const animFrame = useRef<number>(0);
   const disabled = pathname?.startsWith("/garden/") || !clickEffect;
 
   useEffect(() => {
@@ -80,17 +80,18 @@ export default function ClickEffect() {
         ctx.fill();
       }
       ctx.globalAlpha = 1;
-      animFrame.current = requestAnimationFrame(loop);
+      return particles.current.length > 0;
     };
-    loop();
+    const animation = createIdleAnimation(loop);
 
-    const onClick = (e: MouseEvent) => spawn(e.clientX, e.clientY);
+    const onClick = (e: MouseEvent) => { spawn(e.clientX, e.clientY); animation.start(); };
     window.addEventListener("click", onClick);
 
     return () => {
       window.removeEventListener("resize", resize);
       window.removeEventListener("click", onClick);
-      cancelAnimationFrame(animFrame.current);
+      animation.dispose();
+      particles.current = [];
     };
   }, [disabled]);
 

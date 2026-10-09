@@ -36,6 +36,7 @@ function loadPosts({ statsResponse } = {}) {
     exports: {},
     process: { env: { NEXT_PUBLIC_CONTENT_MODE: "published" } },
     URLSearchParams,
+    AbortSignal,
     fetch: async url => {
       calls.push(String(url));
       if (statsResponse instanceof Error) throw statsResponse;

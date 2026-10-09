@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useEffects } from "@/components/providers/EffectProvider";
+import { createIdleAnimation } from "@/lib/idle-animation";
 
 interface Sparkle {
   x: number;
@@ -23,7 +24,6 @@ export default function KiraSparkle() {
   const { sparkleEffect } = useEffects();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sparkles = useRef<Sparkle[]>([]);
-  const animFrame = useRef<number>(0);
   const disabled = pathname?.startsWith("/garden/") || !sparkleEffect;
 
   useEffect(() => {
@@ -88,6 +88,7 @@ export default function KiraSparkle() {
         spawnAt(rect.left + 5, cy);
         spawnAt(rect.right - 5, cy);
       }
+      animation.start();
     };
 
     const onMouseUp = () => setTimeout(handleSelection, 0);
@@ -129,15 +130,16 @@ export default function KiraSparkle() {
         ctx.restore();
       }
 
-      animFrame.current = requestAnimationFrame(loop);
+      return sparkles.current.length > 0;
     };
-    loop();
+    const animation = createIdleAnimation(loop);
 
     return () => {
       window.removeEventListener("resize", resize);
       window.removeEventListener("mouseup", onMouseUp);
       window.removeEventListener("touchend", onMouseUp);
-      cancelAnimationFrame(animFrame.current);
+      animation.dispose();
+      sparkles.current = [];
     };
   }, [disabled]);
 

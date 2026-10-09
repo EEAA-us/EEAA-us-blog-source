@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useEffects } from "@/components/providers/EffectProvider";
+import { createIdleAnimation } from "@/lib/idle-animation";
 
 interface Particle {
   x: number;
@@ -18,14 +19,13 @@ export default function MouseTrail() {
   const { mouseTrail } = useEffects();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particles = useRef<Particle[]>([]);
-  const mouse = useRef({ x: 0, y: 0 });
-  const frame = useRef(0);
 
   useEffect(() => {
     if (!mouseTrail) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
     const resize = () => {
       canvas.width = window.innerWidth;
@@ -35,7 +35,6 @@ export default function MouseTrail() {
     window.addEventListener("resize", resize);
 
     const handleMove = (e: MouseEvent) => {
-      mouse.current = { x: e.clientX, y: e.clientY };
       // 每次移动产生几个粒子
       for (let i = 0; i < 2; i++) {
         const angle = Math.random() * Math.PI * 2;
@@ -55,6 +54,7 @@ export default function MouseTrail() {
       if (particles.current.length > 200) {
         particles.current = particles.current.slice(-150);
       }
+      animation.start();
     };
     window.addEventListener("mousemove", handleMove);
 
@@ -85,12 +85,13 @@ export default function MouseTrail() {
       });
 
       particles.current = particles.current.filter((p) => p.life < p.maxLife);
-      frame.current = requestAnimationFrame(animate);
+      return particles.current.length > 0;
     };
-    frame.current = requestAnimationFrame(animate);
+    const animation = createIdleAnimation(animate);
 
     return () => {
-      cancelAnimationFrame(frame.current);
+      animation.dispose();
+      particles.current = [];
       window.removeEventListener("resize", resize);
       window.removeEventListener("mousemove", handleMove);
     };

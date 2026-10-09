@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, Loader2, Search, X } from "lucide-react";
 import PostCard, { type PostOut } from "@/components/posts/PostCard";
-import { getCategories, getPosts, getPostsCount, type CategoryItem } from "@/app/api";
+import { getCategories, getPosts, getPostsCount, refreshPublishedStats, type CategoryItem } from "@/app/api";
 import PageCover from "@/components/ui/PageCover";
 import { useTranslation } from "@/lib/i18n";
 
@@ -65,13 +65,18 @@ export default function PostsPage() {
       ...(searchQuery ? { search: searchQuery } : {}),
     };
     Promise.all([
-      getPosts(filters),
+      getPosts(filters, { includeStats: false }),
       getPostsCount("published", { category: activeCategory ?? undefined, search: searchQuery || undefined }),
     ])
       .then(([data, count]) => {
         if (!active) return;
         setPosts(data);
         setTotalCount(count.count);
+        // Content is ready independently of the optional live counters.
+        setLoading(false);
+        void refreshPublishedStats(data).then((updated) => {
+          if (active) setPosts(updated);
+        }).catch(() => { /* The snapshot counters remain available. */ });
       })
       .catch(() => {
         if (active) { setPosts([]); setTotalCount(0); setError(true); }
