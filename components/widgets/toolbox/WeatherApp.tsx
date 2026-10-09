@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "@/lib/i18n";
+import { withRequestDeadline } from "@/lib/bounded-request";
 
 const API_BASE = "https://uapis.cn/api/v1/misc/weather";
 
@@ -258,70 +259,85 @@ const STORAGE_KEY = "weather-city";
 
 export default function WeatherApp() {
   const { language, tx } = useTranslation();
-  const savedCity = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+  const [savedCity] = useState(() => {
+    try { return typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null; }
+    catch { return null; }
+  });
   const [inputCity, setInputCity] = useState(savedCity || "");
   const [data, setData] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<"now" | "forecast" | "indices">("now");
-  const inited = useRef(false);
+  const request = useRef<AbortController | null>(null);
 
-  const fetchWeather = useCallback(async (query?: string) => {
+  const fetchWeather = useCallback(async (query?: string, locate = false) => {
+    request.current?.abort();
+    const controller = new AbortController();
+    request.current = controller;
     setLoading(true);
     setError("");
     try {
-      const params = new URLSearchParams({
-        extended: "true",
-        forecast: "true",
-        hourly: "true",
-        indices: "true",
-        lang: "zh",
-      });
+      const json = await withRequestDeadline(controller.signal, 12_000, async (signal) => {
+        const params = new URLSearchParams({
+          extended: "true",
+          forecast: "true",
+          hourly: "true",
+          indices: "true",
+          lang: "zh",
+        });
 
-      if (query) {
-        params.set("city", query);
-      } else {
-        // 尝试浏览器定位 → 反解城市名
-        try {
-          const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-            if (!navigator.geolocation) return reject(new Error("不支持定位"));
-            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 8000, maximumAge: 600000, enableHighAccuracy: true });
-          });
-          const { latitude, longitude } = pos.coords;
-          // Nominatim 免费反向地理编码，支持中文
-          const geoRes = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=zh-CN`
-          );
-          if (geoRes.ok) {
-            const geo = await geoRes.json();
-            const addr = geo.address || {};
-            const cityName = addr.city || addr.town || addr.county || addr.state;
-            if (cityName) params.set("city", cityName);
+        if (query) {
+          params.set("city", query);
+        } else if (locate) {
+          // 尝试浏览器定位 → 反解城市名
+          try {
+            const pos = await withRequestDeadline(signal, 5000, () => new Promise<GeolocationPosition>((resolve, reject) => {
+              if (!navigator.geolocation) return reject(new Error("不支持定位"));
+              navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000, maximumAge: 600000, enableHighAccuracy: false });
+            }));
+            const { latitude, longitude } = pos.coords;
+            // Nominatim 免费反向地理编码，支持中文
+            const geo = await withRequestDeadline(signal, 3000, async (geoSignal) => {
+              const geoRes = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=zh-CN`,
+                { signal: geoSignal }
+              );
+              return geoRes.ok ? geoRes.json() : null;
+            });
+            if (geo) {
+              const addr = geo.address || {};
+              const cityName = addr.city || addr.town || addr.county || addr.state;
+              if (cityName) params.set("city", cityName);
+            }
+          } catch {
+            // 浏览器定位失败，不设 city，走 IP 定位
           }
-        } catch {
-          // 浏览器定位失败，不设 city，走 IP 定位
         }
-      }
 
-      const res = await fetch(`${API_BASE}?${params.toString()}`);
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        throw new Error(err?.message || `请求失败 (${res.status})`);
-      }
-      const json = await res.json();
+        signal.throwIfAborted();
+        const res = await fetch(`${API_BASE}?${params.toString()}`, { signal });
+        if (!res.ok) {
+          const err = await res.json().catch(() => null);
+          throw new Error(err?.message || `请求失败 (${res.status})`);
+        }
+        const result = await res.json() as WeatherData;
+        if (!result || typeof result.city !== "string") throw new Error("天气数据暂不可用");
+        return result;
+      });
+      if (request.current !== controller) return;
       setData(json);
-      localStorage.setItem(STORAGE_KEY, json.city);
+      try { localStorage.setItem(STORAGE_KEY, json.city); } catch { /* Weather remains available without persistence. */ }
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "获取天气失败");
+      if (request.current === controller) setError(e instanceof Error && e.name === "TimeoutError" ? "天气加载超时，请重试" : e instanceof Error ? e.message : "获取天气失败");
     } finally {
-      setLoading(false);
+      if (request.current === controller) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (inited.current) return;
-    inited.current = true;
-    fetchWeather(savedCity || undefined);
+    let active = true;
+    queueMicrotask(() => { if (active) void fetchWeather(savedCity || undefined); });
+    return () => { active = false; request.current?.abort(); request.current = null; };
   }, [fetchWeather, savedCity]);
 
   const handleSearch = () => {
@@ -357,7 +373,7 @@ export default function WeatherApp() {
         </button>
         <button
           type="button"
-          onClick={() => fetchWeather()}
+          onClick={() => fetchWeather(undefined, true)}
           title={tx("自动定位")}
           className="px-2 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
         >
@@ -366,7 +382,7 @@ export default function WeatherApp() {
       </div>
 
       {error && (
-        <div className="text-xs text-red-500 text-center py-2">{error}</div>
+        <div role="alert" className="text-xs text-red-500 text-center py-2">{error}<button type="button" onClick={() => fetchWeather(inputCity.trim() || savedCity || undefined)} className="ml-2 underline">{tx("重试")}</button></div>
       )}
 
       {data && !loading && (

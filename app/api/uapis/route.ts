@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withRequestDeadline } from "@/lib/bounded-request";
 
 const BASE = "https://uapis.cn/api/v1";
 
@@ -15,9 +16,11 @@ export async function GET(req: NextRequest) {
   const url = getTargetUrl(req);
   if (!url) return NextResponse.json({ message: "Missing 'path' parameter." }, { status: 400 });
   try {
-    const res = await fetch(url);
-    const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    const result = await withRequestDeadline(req.signal, 10_000, async signal => {
+      const res = await fetch(url, { signal });
+      return { data: await res.json(), status: res.status };
+    });
+    return NextResponse.json(result.data, { status: result.status });
   } catch {
     return NextResponse.json({ message: "请求外部API失败" }, { status: 502 });
   }
@@ -27,14 +30,17 @@ export async function POST(req: NextRequest) {
   const url = getTargetUrl(req);
   if (!url) return NextResponse.json({ message: "Missing 'path' parameter." }, { status: 400 });
   try {
-    const body = await req.json();
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+    const result = await withRequestDeadline(req.signal, 10_000, async signal => {
+      const body = await req.json();
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal,
+      });
+      return { data: await res.json(), status: res.status };
     });
-    const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    return NextResponse.json(result.data, { status: result.status });
   } catch {
     return NextResponse.json({ message: "请求外部API失败" }, { status: 502 });
   }

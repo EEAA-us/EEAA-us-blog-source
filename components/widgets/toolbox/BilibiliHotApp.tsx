@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useTranslation } from "@/lib/i18n";
+import { withRequestDeadline } from "@/lib/bounded-request";
 
 const API = "https://v2.xxapi.cn/api/bilibilihot";
 
@@ -10,20 +11,28 @@ export default function BilibiliHotApp() {
   const [list, setList] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    fetch(API)
-      .then((r) => r.json())
+    const controller = new AbortController();
+    let active = true;
+    withRequestDeadline(controller.signal, 10_000, async signal => {
+      const response = await fetch(API, { signal });
+      if (!response.ok) throw new Error("Hot list unavailable");
+      return response.json();
+    })
       .then((json) => {
+        if (!active) return;
         if (json.code === 200 && Array.isArray(json.data)) {
           setList(json.data);
         } else {
           setError(json.msg || tx("获取失败"));
         }
       })
-      .catch(() => setError(tx("网络请求失败")))
-      .finally(() => setLoading(false));
-  }, [tx]);
+      .catch(() => { if (active) setError(tx("网络请求失败")); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; controller.abort(); };
+  }, [tx, attempt]);
 
   if (loading) {
     return (
@@ -36,7 +45,7 @@ export default function BilibiliHotApp() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-sm text-red-500">{error}</div>
+        <div role="alert" className="text-sm text-red-500">{error}<button type="button" className="ml-2 underline" onClick={() => { setError(""); setLoading(true); setAttempt(value => value + 1); }}>{tx("重试")}</button></div>
       </div>
     );
   }

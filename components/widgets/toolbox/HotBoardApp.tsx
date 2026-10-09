@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "@/lib/i18n";
+import { withRequestDeadline } from "@/lib/bounded-request";
 
 const PLATFORMS = [
   { id: "weibo", name: "微博", color: "#e6162d" },
@@ -47,24 +48,30 @@ export default function HotBoardApp() {
   const [result, setResult] = useState<HotResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const request = useRef<AbortController | null>(null);
+  useEffect(() => () => { request.current?.abort(); request.current = null; }, []);
 
   async function fetchHot(type: string) {
+    request.current?.abort();
+    const controller = new AbortController();
+    request.current = controller;
     setPlatform(type);
     setLoading(true);
     setError("");
     setResult(null);
     try {
-      const res = await fetch(`/api/uapis?path=misc/hotboard&type=${type}`);
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.message || "查询失败");
-      } else {
-        setResult(data);
-      }
+      const data = await withRequestDeadline(controller.signal, 12_000, async signal => {
+        const res = await fetch(`/api/uapis?path=misc/hotboard&type=${type}`, { signal });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.message || "查询失败");
+        if (!Array.isArray(json?.list)) throw new Error("热榜数据暂不可用");
+        return json as HotResult;
+      });
+      if (request.current === controller) setResult(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "网络错误");
+      if (request.current === controller) setError(e instanceof Error ? e.message : "网络错误");
     } finally {
-      setLoading(false);
+      if (request.current === controller) setLoading(false);
     }
   }
 
