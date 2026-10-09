@@ -47,6 +47,7 @@ const navLinks = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const readingRoute = pathname.startsWith("/projects/") || pathname.startsWith("/posts/");
   const router = useRouter();
   const navigate = usePageNavigation();
   const prefetchNavigation = (href: string) => {
@@ -242,7 +243,7 @@ export default function Navbar() {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden xl:flex items-center space-x-1">
+            <div className="site-nav-links hidden xl:flex min-w-0 items-center space-x-1">
               {navLinks.map((link) => {
                 const Icon = link.icon;
                 const activePath = link.href.split("#")[0];
@@ -285,7 +286,7 @@ export default function Navbar() {
             <div className="nav-actions flex items-center gap-1 sm:gap-2">
               <Toolbox navigationTextStyle={navigationTextStyle} />
               <ArticleSearch />
-              <div id="reading-layout-slot" className="flex items-center gap-1" />
+              <div id="reading-layout-slot" data-reading-route={readingRoute} className="flex items-center gap-1" />
               <ThemeToggle style={navigationTextStyle} />
 
               {/* Settings Button */}

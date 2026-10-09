@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, ChevronRight, FolderTree, Loader2 } from "lucide-react";
@@ -16,6 +16,8 @@ import { useTranslation } from "@/lib/i18n";
 import { useAppearance } from "@/components/providers/AppearanceProvider";
 import { recordArticleView } from "@/lib/cloud-stats-client";
 import { projectCoverUrl, useProjectCovers } from "@/lib/project-covers";
+import { isPublishedContentMode } from "@/lib/published-content";
+import { loadPublishedArticle } from "@/lib/published-article";
 
 function OutlineTree({
   items,
@@ -23,12 +25,14 @@ function OutlineTree({
   selectedId,
   expandedIds,
   onSelect,
+  onPrefetch,
 }: {
   items: ProjectOutlineItem[];
   parentId?: string;
   selectedId: string;
   expandedIds: Set<string>;
   onSelect: (id: string, hasChildren: boolean) => void;
+  onPrefetch: (slug?: string) => void;
 }) {
   const siblings = items.filter((item) => item.parentId === parentId);
 
@@ -42,6 +46,9 @@ function OutlineTree({
             <button
               type="button"
               onClick={() => onSelect(item.id, hasChildren)}
+              onMouseEnter={() => onPrefetch(item.slug)}
+              onFocus={() => onPrefetch(item.slug)}
+              onTouchStart={() => onPrefetch(item.slug)}
               aria-expanded={hasChildren ? isExpanded : undefined}
               className={`w-full flex items-center gap-2 text-left rounded-xl px-3 py-2 text-sm transition-colors ${selectedId === item.id ? "bg-sky-500 text-white shadow-md" : "text-slate-600 dark:text-slate-300 hover:bg-sky-500/10"}`}
             >
@@ -55,6 +62,7 @@ function OutlineTree({
                 selectedId={selectedId}
                 expandedIds={expandedIds}
                 onSelect={onSelect}
+                onPrefetch={onPrefetch}
               />
             )}
           </li>
@@ -113,7 +121,15 @@ export default function ProjectDetailPage() {
   const article = articleResult && articleResult.slug === selectedSlug ? articleResult.data : null;
   const loading = Boolean(selectedSlug && articleResult?.slug !== selectedSlug);
   const articleError = Boolean(selectedSlug && !loading && !article);
-  const content = selectedSlug ? article?.content ?? "" : project?.longDescription ?? "";
+  // Keep the mounted body and reading portals while another chapter downloads.
+  // A status identifies the pending chapter; counters/actions still use article.
+  const displayedArticle = article ?? (loading ? articleResult?.data : null);
+  const content = selectedSlug ? displayedArticle?.content ?? "" : project?.longDescription ?? "";
+  const prefetchChapter = (slug?: string) => {
+    if (!isPublishedContentMode || !slug || slug === selectedSlug) return;
+    const post = posts.find(item => item.slug === slug && item.status === "published");
+    if (post) void loadPublishedArticle(post.id).catch(() => {});
+  };
 
   useEffect(() => {
     if (!project || positionedProject.current === project.id || (window.location.hash && window.location.hash !== "#page-content")) return;
@@ -151,21 +167,16 @@ export default function ProjectDetailPage() {
     if (item.parentId) setExpandedIds((previous) => new Set(previous).add(item.parentId!));
   };
 
-  // Position after the new chapter (or its error) has mounted, not while the
-  // previous tall article is being replaced by a short loading placeholder.
-  useEffect(() => {
+  // Commit body and position before painting; a short target must not first
+  // clamp the old scroll position and then animate back from that intermediate frame.
+  useLayoutEffect(() => {
     if (!pendingChapterPosition.current || loading) return;
-    let frame = requestAnimationFrame(() => {
-      frame = requestAnimationFrame(() => {
-        pendingChapterPosition.current = false;
-        document.getElementById("page-content")?.scrollIntoView({
-          block: "start",
-          behavior: preferences.navigationScroll === "smooth" && !reducedMotion ? "smooth" : "instant",
-        });
-      });
+    pendingChapterPosition.current = false;
+    document.getElementById("page-content")?.scrollIntoView({
+      block: "start",
+      behavior: "instant",
     });
-    return () => cancelAnimationFrame(frame);
-  }, [selectedId, loading, preferences.navigationScroll, reducedMotion]);
+  }, [selectedId, loading]);
 
   useEffect(() => {
     if (!selectedSlug) return;
@@ -222,37 +233,36 @@ export default function ProjectDetailPage() {
           </div>
           <details key={preferences.readingLayout} open={preferences.readingLayout !== "focus"}><summary className="cursor-pointer text-sm font-semibold text-slate-500 mb-2">{tx("文档目录")}</summary>
           <nav aria-label={tx("项目文档目录")}>
-            <OutlineTree items={outline} selectedId={selectedId} expandedIds={expandedIds} onSelect={handleOutlineSelect} />
+            <OutlineTree items={outline} selectedId={selectedId} expandedIds={expandedIds} onSelect={handleOutlineSelect} onPrefetch={prefetchChapter} />
           </nav>
           </details>
         </aside>
 
-        <article className="editorial-panel editorial-reading min-w-0 px-5 py-7 sm:px-10 sm:py-10">
+        <article aria-busy={loading} className="editorial-panel editorial-reading min-w-0 px-5 py-7 sm:px-10 sm:py-10">
+          <ReadingLayoutSettings shortcut />
+          <ReadingTextSettings />
           <div className="mb-6 pb-5 border-b border-slate-200/60 dark:border-slate-700/60">
             <div className="flex items-center gap-3 mb-2">
               <p className="text-xs uppercase tracking-wider text-sky-500 font-bold">{project.statusLabel}</p>
-              <span className="text-xs text-slate-400">{tx("更新于")} {article?.updated_at?.slice(0, 10) ?? project.updatedAt}</span>
+              <span className="text-xs text-slate-400">{tx("更新于")} {displayedArticle?.updated_at?.slice(0, 10) ?? project.updatedAt}</span>
             </div>
-            <h1 className="text-2xl md:text-4xl font-black text-slate-900 dark:text-white">{article?.title ?? selectedArticle?.title ?? selected?.title ?? project.name}</h1>
+            <h1 className="text-2xl md:text-4xl font-black text-slate-900 dark:text-white">{displayedArticle?.title ?? selectedArticle?.title ?? selected?.title ?? project.name}</h1>
             <div className="flex items-start justify-between gap-4">
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{article?.description ?? selectedArticle?.description ?? selected?.description ?? project.longDescription}</p>
-              <button type="button" onClick={copyArticle} className="shrink-0 mt-1 rounded-lg border border-sky-400/30 bg-sky-500/10 px-3 py-1.5 text-xs font-semibold text-sky-500 hover:bg-sky-500/20 transition-colors">
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{displayedArticle?.description ?? selectedArticle?.description ?? selected?.description ?? project.longDescription}</p>
+              <button type="button" disabled={loading || articleError} onClick={copyArticle} className="shrink-0 mt-1 rounded-lg border border-sky-400/30 bg-sky-500/10 px-3 py-1.5 text-xs font-semibold text-sky-500 hover:bg-sky-500/20 transition-colors disabled:opacity-50">
                 {tx(copied ? "已复制" : "复制全文")}
               </button>
             </div>
           </div>
-          {loading ? (
-            <div className="flex justify-center py-16"><Loader2 className="w-7 h-7 text-sky-500 animate-spin" /></div>
-          ) : articleError ? (
+          {loading && <div role="status" className="mb-4 flex items-center gap-2 text-sm text-sky-500"><Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />{tx("正在加载文章…")} {selectedArticle?.title ?? selected?.title}</div>}
+          {articleError ? (
             <div role="alert" className="py-12 text-center text-slate-500">
               <p>{tx("文章暂时无法加载或尚未发布，请重试。")}</p>
               <button type="button" className="mt-3 text-sky-500 hover:underline" onClick={() => { setArticleResult(null); setArticleAttempt(value => value + 1); }}>{tx("重新加载")}</button>
             </div>
           ) : (
             <>
-              <ReadingLayoutSettings shortcut />
-              <ReadingTextSettings />
-              <ArticleContent content={content} contentRef={contentRef} imageDimensions={article?.image_dimensions} className="project-content" />
+              <ArticleContent content={content} contentRef={contentRef} imageDimensions={displayedArticle?.image_dimensions} className="project-content" />
               {article && chapterIndex >= 0 && (
                 <>
                   <div className="mt-8 border-t border-slate-200/60 pt-5 dark:border-slate-700/60">
@@ -260,13 +270,13 @@ export default function ProjectDetailPage() {
                   </div>
                   <nav aria-label={tx("项目章节导航")} className="mt-5 grid grid-cols-2 gap-3">
                     {previousChapter ? (
-                      <button type="button" onClick={() => selectChapter(previousChapter)} className="group min-w-0 rounded-xl border border-slate-200/70 px-4 py-3 text-left transition-colors hover:border-sky-400/60 hover:bg-sky-500/5 dark:border-slate-700/70">
+                      <button type="button" onMouseEnter={() => prefetchChapter(previousChapter.slug)} onFocus={() => prefetchChapter(previousChapter.slug)} onTouchStart={() => prefetchChapter(previousChapter.slug)} onClick={() => selectChapter(previousChapter)} className="group min-w-0 rounded-xl border border-slate-200/70 px-4 py-3 text-left transition-colors hover:border-sky-400/60 hover:bg-sky-500/5 dark:border-slate-700/70">
                         <span className="mb-1 flex items-center gap-1 text-sm text-slate-400"><ArrowLeft aria-hidden="true" className="h-3.5 w-3.5" />{tx("上一篇")}</span>
                         <span className="block truncate text-base font-semibold text-slate-700 group-hover:text-sky-500 dark:text-slate-200">{previousChapter.title}</span>
                       </button>
                     ) : <span />}
                     {nextChapter ? (
-                      <button type="button" onClick={() => selectChapter(nextChapter)} className="group min-w-0 rounded-xl border border-slate-200/70 px-4 py-3 text-right transition-colors hover:border-sky-400/60 hover:bg-sky-500/5 dark:border-slate-700/70">
+                      <button type="button" onMouseEnter={() => prefetchChapter(nextChapter.slug)} onFocus={() => prefetchChapter(nextChapter.slug)} onTouchStart={() => prefetchChapter(nextChapter.slug)} onClick={() => selectChapter(nextChapter)} className="group min-w-0 rounded-xl border border-slate-200/70 px-4 py-3 text-right transition-colors hover:border-sky-400/60 hover:bg-sky-500/5 dark:border-slate-700/70">
                         <span className="mb-1 flex items-center justify-end gap-1 text-sm text-slate-400">{tx("下一篇")}<ArrowRight aria-hidden="true" className="h-3.5 w-3.5" /></span>
                         <span className="block truncate text-base font-semibold text-slate-700 group-hover:text-sky-500 dark:text-slate-200">{nextChapter.title}</span>
                       </button>
@@ -279,7 +289,7 @@ export default function ProjectDetailPage() {
         </article>
 
         <div className="reading-outline">
-          <ReadingProgress key={selectedSlug ?? selectedId} contentRef={contentRef} contentKey={`${content}\0${JSON.stringify(article?.image_dimensions ?? {})}`} />
+          <ReadingProgress contentRef={contentRef} contentKey={`${content}\0${JSON.stringify(displayedArticle?.image_dimensions ?? {})}`} />
         </div>
       </div>
       </div>

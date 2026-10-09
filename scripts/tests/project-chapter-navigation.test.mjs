@@ -13,7 +13,7 @@ const compiled = ts.transpileModule(source, { compilerOptions: {
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
 function projectPage() {
-  const hooks = [], pendingEffects = [], frames = new Map(), requests = [], scrolls = [];
+  const hooks = [], pendingEffects = [], frames = new Map(), requests = [], scrolls = [], prefetches = [];
   let cursor = 0, nextFrame = 1, tree, currentContent = null, scheduled = false;
   const chapters = [
     { id: 'intro', title: 'Intro', slug: 'chapter-a' },
@@ -53,7 +53,8 @@ function projectPage() {
     cancelAnimationFrame: id => frames.delete(id),
     navigator: { clipboard: { writeText: async () => {} } },
     require(name) {
-      if (name === 'react') return {
+      if (name === 'react') {
+        const react = {
         useState(initial) {
           const slot = cursor++;
           if (!hooks[slot]) hooks[slot] = { value: typeof initial === 'function' ? initial() : initial };
@@ -82,7 +83,10 @@ function projectPage() {
             pendingEffects.push({ slot: next, run: effect });
           }
         },
-      };
+        };
+        react.useLayoutEffect = react.useEffect;
+        return react;
+      }
       if (name === 'react/jsx-runtime') return {
         Fragment: 'Fragment', jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }),
       };
@@ -90,6 +94,10 @@ function projectPage() {
       if (name === 'next/navigation') return { useParams: () => ({ id: 'demo' }) };
       if (name === 'lucide-react') return new Proxy({}, { get: (_, key) => key });
       if (name === '@/components/ui/ArticleContent') return { default: props => { currentContent = props.content; return { type: 'ArticleContent', props }; } };
+      if (name === '@/components/ui/ReadingLayoutSettings') return { default: 'ReadingLayoutSettings' };
+      if (name === '@/components/ui/ReadingTextSettings') return { default: 'ReadingTextSettings' };
+      if (name === '@/lib/published-content') return { isPublishedContentMode: true };
+      if (name === '@/lib/published-article') return { loadPublishedArticle: async id => { prefetches.push(id); } };
       if (name === '@/components/providers/AppearanceProvider') return { useAppearance: () => ({ preferences: { navigationScroll: 'instant', readingLayout: 'default' }, reducedMotion: false }) };
       if (name === '@/lib/i18n') return { useTranslation: () => ({ tx: text => text }) };
       if (name === '../projectsData') return { projects: [project] };
@@ -105,7 +113,7 @@ function projectPage() {
   vm.runInNewContext(compiled, sandbox);
   render();
   return {
-    get tree() { return tree; }, requests, scrolls, frames,
+    get tree() { return tree; }, requests, scrolls, frames, prefetches,
     flushFrames() { let guard = 0; while (frames.size && guard++ < 20) { const [id, callback] = frames.entries().next().value; frames.delete(id); callback(); } },
     chapter(id) { return find(tree, node => node.type === 'button' && textOf(node).includes(chapters.find(ch => ch.id === id).title)); },
     nextButton() { return find(tree, node => node.type === 'button' && textOf(node).includes('下一篇')); },
@@ -147,6 +155,40 @@ test('outline selection waits for the new chapter body before scrolling', async 
   await settle();
   page.flushFrames();
   assert.deepEqual(page.scrolls, ['new body']);
+});
+
+test('pending chapters retain body and reading tools, but cannot copy or like the previous chapter', async () => {
+  const page = projectPage();
+  await settle();
+  page.complete('chapter-a', 'old body and images');
+  await settle();
+  page.chapter('second').props.onClick();
+  await settle();
+  assert.equal(find(page.tree, node => node.type === 'ArticleContent').props.content, 'old body and images');
+  assert.ok(find(page.tree, node => node.type === 'ReadingLayoutSettings'));
+  assert.ok(find(page.tree, node => node.type === 'ReadingTextSettings'));
+  assert.equal(find(page.tree, node => node.type === 'article').props['aria-busy'], true);
+  assert.equal(find(page.tree, node => node.type === 'button' && textOf(node) === '复制全文').props.disabled, true);
+  assert.equal(page.nextButton(), null);
+  assert.match(textOf(find(page.tree, node => node.props?.role === 'status')), /Second/);
+  page.complete('chapter-b', 'ready body');
+  await settle();
+  assert.equal(find(page.tree, node => node.type === 'ArticleContent').props.content, 'ready body');
+  assert.equal(find(page.tree, node => node.type === 'article').props['aria-busy'], false);
+});
+
+test('outline and next-chapter intent warm only the requested published article', async () => {
+  const page = projectPage();
+  await settle();
+  page.chapter('second').props.onMouseEnter();
+  await settle();
+  assert.deepEqual(page.prefetches, [2]);
+  assert.equal(page.requests.length, 1, 'hover must not select another article');
+  page.complete('chapter-a', 'first body');
+  await settle();
+  page.nextButton().props.onFocus();
+  await settle();
+  assert.deepEqual(page.prefetches, [2, 2]);
 });
 
 test('previous and next chapter controls both position after loading their target', async () => {

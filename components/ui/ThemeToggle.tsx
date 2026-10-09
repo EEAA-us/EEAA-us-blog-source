@@ -1,31 +1,25 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { flushSync } from "react-dom";
 import { Sun, Moon } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useAppearance } from "@/components/providers/AppearanceProvider";
 import { useTranslation } from "@/lib/i18n";
+import { runThemeTransition, stopThemeTransition } from "@/lib/theme-transition";
 
 export default function ThemeToggle({ style }: { style?: React.CSSProperties }) {
-  const { toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const { reducedMotion } = useAppearance();
   const { tx } = useTranslation();
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (timer.current !== null) clearTimeout(timer.current);
-    document.documentElement.classList.remove("theme-switching");
-  }, []);
+  const desiredTheme = useRef(theme);
+  useEffect(() => { desiredTheme.current = theme; }, [theme]);
+  useEffect(() => stopThemeTransition, []);
 
   const toggle = () => {
-    if (timer.current !== null) clearTimeout(timer.current);
-    if (!reducedMotion) {
-      document.documentElement.classList.add("theme-switching");
-      timer.current = setTimeout(() => {
-        document.documentElement.classList.remove("theme-switching");
-        timer.current = null;
-      }, 700);
-    } else document.documentElement.classList.remove("theme-switching");
-    toggleTheme();
+    const target = desiredTheme.current === "dark" ? "light" : "dark";
+    desiredTheme.current = target;
+    runThemeTransition(() => flushSync(() => setTheme(target)), reducedMotion);
   };
 
   return <button type="button" onClick={toggle} style={style}
