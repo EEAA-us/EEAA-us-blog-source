@@ -194,4 +194,3 @@ test('collapsing the selected outline group does not scroll, and rapid selection
   assert.deepEqual(page.scrolls, ['final body']);
   assert.equal(page.frames.size, 0, 'the completed positioning frames are cleared');
 });
-
