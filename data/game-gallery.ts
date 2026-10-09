@@ -1,7 +1,7 @@
 import type { Album } from "@/components/photos/AlbumCard";
 
 export interface GameGallerySource {
-  game: "genshin" | "wuthering" | "zzz";
+  game: "genshin" | "wuthering" | "zzz" | "starrail";
   id: string;
   character: string;
   sourceUrl: string;

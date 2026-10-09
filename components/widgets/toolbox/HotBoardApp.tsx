@@ -30,13 +30,14 @@ const PLATFORMS = [
 ];
 
 interface HotItem {
-  index: number;
+  index?: number;
   title: string;
   hot_value: string;
   url: string;
   extra?: Record<string, string>;
   cover?: string;
   source?: string;
+  publish_time?: string;
 }
 
 interface HotResult {
@@ -88,6 +89,15 @@ export default function HotBoardApp() {
       notation: "compact",
       maximumFractionDigits: 1,
     }).format(n);
+  }
+
+  function formatPublishTime(value?: string) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) return "";
+    return date.toLocaleDateString(language === "zh" ? "zh-CN" : language === "ja" ? "ja-JP" : "en-US", {
+      year: "numeric", month: "2-digit", day: "2-digit",
+    });
   }
 
   const currentPlatform = PLATFORMS.find((p) => p.id === platform);
@@ -149,13 +159,11 @@ export default function HotBoardApp() {
             >
               <span
                 className={`w-5 text-center text-[10px] font-bold shrink-0 ${
-                  i < 3
-                    ? "text-white rounded-sm"
-                    : "text-slate-400"
+                  item.index != null && item.index <= 3 ? "text-white rounded-sm" : "text-slate-400"
                 }`}
-                style={i < 3 ? { backgroundColor: currentPlatform?.color || "#e6162d" } : undefined}
+                style={item.index != null && item.index <= 3 ? { backgroundColor: currentPlatform?.color || "#e6162d" } : undefined}
               >
-                {item.index || i + 1}
+                {item.index ?? "•"}
               </span>
               <span className="text-xs text-slate-700 dark:text-slate-300 truncate flex-1 group-hover:text-sky-500 transition-colors">
                 {item.title}
@@ -165,6 +173,7 @@ export default function HotBoardApp() {
                   {formatHot(item.hot_value)}
                 </span>
               )}
+              {item.publish_time && <span className="text-[9px] text-slate-400 shrink-0">{formatPublishTime(item.publish_time)}</span>}
               {item.source && <span className="text-[9px] text-slate-400 shrink-0">{item.source}</span>}
             </a>
           ))}

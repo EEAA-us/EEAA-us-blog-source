@@ -14,6 +14,7 @@ const RandomImageApp = lazy(() => import("./toolbox/RandomImageApp"));
 const GameImagesApp = lazy(() => import("./toolbox/GameImagesApp"));
 const Random4kApp = lazy(() => import("./toolbox/Random4kApp"));
 const RPSApp = lazy(() => import("./toolbox/RPSApp"));
+const TiboApp = lazy(() => import("./toolbox/TiboApp"));
 
 interface AppDef {
   id: string;
@@ -26,6 +27,7 @@ interface AppDef {
 const allApps: AppDef[] = [
   { id: "search", name: "智能搜索", icon: <Search />, accent: "#788ba5", component: SearchApp },
   { id: "hotboard", name: "全网热榜", icon: <Flame />, accent: "#b08a73", component: HotBoardApp },
+  { id: "tibo", name: "Tibo动态", icon: <Monitor />, accent: "#7b92ab", component: TiboApp },
   { id: "bilibilihot", name: "B站热榜", icon: <TvMinimalPlay />, accent: "#799fa6", component: BilibiliHotApp },
   { id: "weather", name: "天气", icon: <CloudSun />, accent: "#899cad", component: WeatherApp },
   { id: "fortune", name: "抽签", icon: <Ticket />, accent: "#ad9b77", component: FortuneDrawApp },

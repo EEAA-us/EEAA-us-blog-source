@@ -85,7 +85,7 @@ export async function checkPreview(url, posts) {
   }
 }
 
-export async function publishSite({ prepareOnly = false, destination, progress = () => {} } = {}) {
+export async function publishSite({ prepareOnly = false, destination, progress = () => {}, verifyPreview = async () => {} } = {}) {
   const stage = destination || join(root, ".publish/jobs", randomUUID());
   if (!prepareOnly) {
     for (const key of ["VERCEL_TOKEN", "VERCEL_PROJECT_ID", "VERCEL_ORG_ID", "VERCEL_AUTOMATION_BYPASS_SECRET", "BLOG_PUBLISH_GIT_URL", "GITHUB_TOKEN", "NEXT_PUBLIC_SITE_URL", "BLOG_STATS_URL", "BLOG_STATS_ADMIN_TOKEN", "BLOG_STATS_SERVICE_TOKEN"]) {
@@ -110,6 +110,8 @@ export async function publishSite({ prepareOnly = false, destination, progress =
   const preview = await createGitPreview({ ...project, ...git }, progress);
   const url = preview.url;
   await checkPreview(url, index.posts);
+  // Optional task-specific checks must complete before statistics or promotion.
+  await verifyPreview(url);
   // Registry initialization never resets existing cloud counts. Tokens are only service-to-service.
   progress("syncing", "同步文章登记与首次累计数字");
   const statsUrl = new URL(process.env.BLOG_STATS_URL);
