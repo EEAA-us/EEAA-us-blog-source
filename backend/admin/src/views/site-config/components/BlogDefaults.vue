@@ -12,6 +12,7 @@ import {
   validHeroMediaUrl
 } from "../../../../../../lib/appearance";
 import { siteConfig } from "../../../../../../siteConfig";
+import { themeTransitionDirections } from "../../../../../../lib/theme-transition-preferences";
 import { getAlbums, getAlbumPhotos, type AlbumItem } from "@/api/album";
 import BlogPalette from "./BlogPalette.vue";
 import BlogSettingField from "./BlogSettingField.vue";
@@ -312,6 +313,7 @@ const enumOptions: Record<string, Record<string, string>> = {
     focus: "专注阅读"
   },
   navigationScroll: { smooth: "平滑滚动", instant: "直接跳转" },
+  themeTransitionDirection: Object.fromEntries(Object.entries(themeTransitionDirections).map(([key, setting]) => [key, setting.label])),
   language: { zh: "简体中文", en: "English", ja: "日本語" },
   subtitleLanguage: {
     auto: "跟随界面",
@@ -352,6 +354,8 @@ const groups: Record<string, Field[]> = {
     { key: "waveAmplitude", label: "轮廓幅度（%）", range: [60, 150, 5] },
     { key: "waveLayers", label: "波浪层数", range: [1, 5] },
     { key: "reduceMotion", label: "界面动画" },
+    { key: "themeTransitionDirection", label: "主题渐变方向" },
+    { key: "themeTransitionDuration", label: "主题渐变时长（毫秒）", range: [200, 1600, 50] },
     { key: "welcomeEnabled", label: "入站欢迎动画" },
     { key: "live2dCharacter", label: "选择看板娘" }
   ],
@@ -408,13 +412,13 @@ groups["语言与入站"] = layoutFields.filter(f =>
 groups["语言与入站"].push(coverFields.find(f => f.key === "welcomeEnabled")!);
 groups["页面跳转"] = layoutFields.filter(f => f.key === "navigationScroll");
 groups["动画与特效"] = coverFields.filter(f =>
-  ["reduceMotion", "live2dCharacter"].includes(f.key)
+  ["reduceMotion", "live2dCharacter", "themeTransitionDirection", "themeTransitionDuration"].includes(f.key)
 );
 groups["页面与背景"] = layoutFields.filter(f =>
   ["layout", "background", "texture", "textureOpacity"].includes(f.key)
 );
 groups["封面与图片"] = coverFields.filter(
-  f => !["welcomeEnabled", "reduceMotion", "live2dCharacter"].includes(f.key)
+  f => !["welcomeEnabled", "reduceMotion", "live2dCharacter", "themeTransitionDirection", "themeTransitionDuration"].includes(f.key)
 );
 groups["页面与背景"].push(
   { key: "opacity", label: "卡片不透明度", range: [88, 100] },
@@ -571,7 +575,7 @@ onMounted(() => {
   <section v-loading="loading" class="blog-defaults">
     <header>
       <div>
-        <span>个人博客 / 博客默认外观</span>
+        <span>EEAA-us / 博客默认外观</span>
         <h1>给小站一个初始模样</h1>
         <p>
           访客第一次进入，或点击“恢复默认”时使用。访客自己的配色、字体和背景设置仍然优先，不会被强制覆盖。

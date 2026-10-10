@@ -78,6 +78,11 @@
 .site-nav-links::-webkit-scrollbar { display: none; }
 .site-nav-link { flex-shrink: 0; white-space: nowrap; }
 .site-nav .nav-actions { flex-shrink: 0; }
+@media (min-width: 1280px) {
+  .site-nav-row { display: grid; grid-template-columns: minmax(320px, 1fr) minmax(0, max-content) minmax(320px, 1fr); }
+  .site-nav-row .site-brand { justify-self: start; }
+  .site-nav-row .nav-actions { justify-self: end; }
+}
 #reading-layout-slot[data-reading-route="true"] { flex: 0 0 72px; }
 .site-nav .reading-layout-trigger-label { display: none; }
 @media (min-width: 1280px) and (max-width: 1535px) { .site-nav-links .site-nav-link { padding-inline: 8px; gap: 4px; } }
@@ -420,7 +425,7 @@ html.theme-switching :is(body, .site-appearance, .theme-background, .theme-backg
   .editorial-panel, .glass-card, .site-nav, .site-nav a, .site-nav button, .site-nav span,
   .appearance-panel, .article-search-dialog, .toolbox-panel, .theme-primary-button, .theme-soft-button) {
   transition-property: background-color, color, border-color, outline-color;
-  transition-duration: 550ms;
+  transition-duration: var(--theme-transition-duration, 650ms);
   transition-timing-function: cubic-bezier(.22, 1, .36, 1);
 }
 .theme-toggle { position: relative; isolation: isolate; }
@@ -443,11 +448,11 @@ html.theme-wiping::view-transition-group(root) { animation: none; }
 html.theme-wiping .theme-toggle-icons svg { transition: none; }
 html.theme-wiping::view-transition-old(root) { animation: none; }
 html.theme-wiping::view-transition-new(root) {
-  mask-image: linear-gradient(135deg, #000 45%, transparent 55%);
+  mask-image: linear-gradient(var(--theme-reveal-angle, 135deg), #000 45%, transparent 55%);
   mask-size: 300% 300%; mask-repeat: no-repeat;
-  animation: theme-diagonal-reveal 650ms cubic-bezier(.22, 1, .36, 1) both;
+  animation: theme-diagonal-reveal var(--theme-transition-duration, 650ms) cubic-bezier(.22, 1, .36, 1) both;
 }
-@keyframes theme-diagonal-reveal { from { mask-position: 100% 100%; } to { mask-position: 0% 0%; } }
+@keyframes theme-diagonal-reveal { from { mask-position: var(--theme-reveal-from, 100% 100%); } to { mask-position: var(--theme-reveal-to, 0% 0%); } }
 html.theme-switching .site-appearance[data-reduce-motion="true"],
 html.theme-switching .site-appearance[data-reduce-motion="true"] * { transition-duration: 0s !important; }
 .site-appearance[data-reduce-motion="true"] .theme-toggle-icons svg { transition: none; }

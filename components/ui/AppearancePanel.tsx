@@ -15,6 +15,7 @@ import CoverTextSettings from "./CoverTextSettings";
 import ReadingLayoutSettings from "./ReadingLayoutSettings";
 import HomeCardColorSettings from "./HomeCardColorSettings";
 import { useTranslation } from "@/lib/i18n";
+import { themeTransitionDirections } from "@/lib/theme-transition-preferences";
 
 const textureIcons = { none: CircleOff, starlight: Sparkles, dots: Grip, topography: Mountain, geometric: Shapes, sakura: Flower2 };
 const settingsCategories = [
@@ -185,6 +186,11 @@ export default function AppearancePanel({ onClose, expanded = false, onToggleExp
           <h3><span>{tx("博客特效")}</span><Sparkles size={15} aria-hidden="true" /></h3>
           <p className="appearance-help">{tx("按喜好组合轻量特效；不会挡住点击，暂停“界面动画”时会统一停止。")}</p>
           <button className="appearance-switch" type="button" role="switch" aria-label={tx("界面动画")} aria-checked={!preferences.reduceMotion} onClick={() => change({ reduceMotion: !preferences.reduceMotion })}><span>{tx("界面动画")}</span><span>{tx(preferences.reduceMotion ? "暂停" : "播放")}</span></button>
+          <Choices label="主题渐变方向" value={preferences.themeTransitionDirection} options={Object.entries(themeTransitionDirections).map(([value, setting]) => ({ value: value as AppearancePreferences["themeTransitionDirection"], label: setting.label }))} onChange={themeTransitionDirection => change({ themeTransitionDirection })} />
+          <label className="appearance-range-label">{tx("主题渐变时长")}<span>{(preferences.themeTransitionDuration / 1000).toFixed(2)}{tx("秒")}</span>
+            <input aria-label={tx("主题渐变时长")} type="range" min="200" max="1600" step="50" value={preferences.themeTransitionDuration} onChange={event => change({ themeTransitionDuration: Number(event.target.value) })} />
+          </label>
+          <p className="appearance-help">{tx("时长越短越快，越长越舒缓；开启减少动态时直接切换。")}</p>
           {reducedMotion && <p className="appearance-help">{tx("动画已暂停。若系统开启了减少动态效果，博客也会尊重系统设置。")}</p>}
           <div className="appearance-effect-grid">
             {[

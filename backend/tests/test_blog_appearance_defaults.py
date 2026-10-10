@@ -93,6 +93,7 @@ class BlogAppearanceDefaultsTests(unittest.TestCase):
             "heroInterval": 4, "readingPageWidth": 1200, "readingContentWidth": 1000,
             "focusContentWidth": 1120, "themeColorSpread": False, "waves": True,
             "reduceMotion": False, "welcomeEnabled": True, "articleHoverGuide": True,
+            "themeTransitionDuration": 650, "themeTransitionDirection": "top-left",
             "articleHoverFrame": True, "heroMediaUrl": "/videos/covers/evanescia.mp4",
             "heroSlides": ["/images/cover.webp"], "heroCustomMedia": [],
         })
@@ -101,6 +102,16 @@ class BlogAppearanceDefaultsTests(unittest.TestCase):
         saved = self.client.put("/api/site-config/appearance-defaults", json=payload)
         self.assertEqual(saved.status_code, 200, saved.text)
         self.assertEqual(saved.json(), payload)
+        self.assertEqual(self.client.get("/api/site-config/appearance-defaults").json(), payload)
+
+    def test_theme_transition_defaults_round_trip_and_reject_bad_preferences(self):
+        payload = {"preferences": {"themeTransitionDuration": 1200, "themeTransitionDirection": "top-right"}, "theme": "system"}
+        saved = self.client.put("/api/site-config/appearance-defaults", json=payload)
+        self.assertEqual(saved.status_code, 200, saved.text)
+        self.assertEqual(self.client.get("/api/site-config/appearance-defaults").json(), payload)
+        for patch in [{"themeTransitionDuration": 199}, {"themeTransitionDuration": 1601}, {"themeTransitionDuration": True}, {"themeTransitionDirection": "diagonal"}]:
+            invalid = self.client.put("/api/site-config/appearance-defaults", json={**payload, "preferences": {**payload["preferences"], **patch}})
+            self.assertEqual(invalid.status_code, 422, invalid.text)
         self.assertEqual(self.client.get("/api/site-config/appearance-defaults").json(), payload)
 
     def test_rejects_unknown_object_urls_and_unsafe_nested_media(self):

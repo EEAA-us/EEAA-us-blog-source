@@ -113,6 +113,8 @@ test("album API failures reject to the caller", async () => {
 
 test("appearance uses the current animated default and preserves stored cover modes", async () => {
   const compiled = await compile("lib/appearance.ts");
+  const transitionPreferences = { exports: {} };
+  vm.runInNewContext(await compile("lib/theme-transition-preferences.ts"), transitionPreferences);
   const mediaDefaults = JSON.parse(await readFile(path.join(root, "public/hero-media-defaults.json"), "utf8"));
   const configSandbox = { exports: {}, process: { env: {} }, require(specifier) {
     if (specifier === "./public/hero-media-defaults.json") return { __esModule: true, default: mediaDefaults };
@@ -124,6 +126,7 @@ test("appearance uses the current animated default and preserves stored cover mo
     URL,
     require(specifier) {
       if (specifier === "../siteConfig") return { ...configSandbox.exports, retiredHeroImages: ["/images/retired-a.webp", "/images/retired-b.jpg"] };
+      if (specifier === "./theme-transition-preferences") return transitionPreferences.exports;
       if (specifier === "@material/material-color-utilities") return Object.fromEntries([
         "SchemeTonalSpot", "SchemeVibrant", "SchemeContent", "SchemeExpressive", "SchemeRainbow", "SchemeFruitSalad", "SchemeMonochrome", "SchemeNeutral", "SchemeFidelity",
       ].map((key) => [key, class {}]));

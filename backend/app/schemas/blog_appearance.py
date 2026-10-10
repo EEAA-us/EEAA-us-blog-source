@@ -17,6 +17,7 @@ PREFERENCE_KEYS = {
     "layout", "background", "texture", "textureOpacity", "opacity", "waves", "coverEffect",
     "waveSpeed", "waveOpacity", "waveBackOpacity", "waveLayerStyle", "waveAmplitude", "waveLayers",
     "reduceMotion", "fontStyle", "homeTextScale", "homeCardColor", "homeCardHex", "homeCardHue",
+    "themeTransitionDuration", "themeTransitionDirection",
     "homeCardStyle", "homeCardTone", "homeTextWeight", "articleTextScale", "articleTextWeight",
     "navigationTextScale", "navigationTextWeight", "coverTextWeight", "coverTitleScale",
     "coverSubtitleScale", "heroMode", "heroInterval", "heroMediaKind", "heroMediaUrl", "heroSlides",
@@ -34,6 +35,7 @@ _NUMBER_KEYS = {
     "waveLayers", "homeTextScale", "homeCardHue", "articleTextScale", "navigationTextScale",
     "coverTitleScale", "coverSubtitleScale", "heroInterval", "readingPageWidth", "readingContentWidth",
     "focusContentWidth",
+    "themeTransitionDuration",
 }
 _STRING_KEYS = PREFERENCE_KEYS - _BOOLEAN_KEYS - _NUMBER_KEYS - _URL_KEYS - {"heroCustomMedia"}
 
@@ -95,6 +97,10 @@ def normalize_preferences(value: Any) -> dict[str, Any]:
             raise ValueError("heroSlides must be a list with at most 50 URLs")
         if key == "heroCustomMedia" and not isinstance(item, list):
             raise ValueError("heroCustomMedia must be a list")
+        if key == "themeTransitionDuration" and not 200 <= item <= 1600:
+            raise ValueError("themeTransitionDuration must be between 200 and 1600 ms")
+        if key == "themeTransitionDirection" and item not in {"top-left", "top-right", "bottom-left", "bottom-right", "top", "bottom", "left", "right"}:
+            raise ValueError("Unsupported themeTransitionDirection")
     try:
         encoded = json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(",", ":")).encode("utf-8")
     except (TypeError, ValueError) as exc:

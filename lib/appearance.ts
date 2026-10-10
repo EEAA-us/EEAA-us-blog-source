@@ -4,6 +4,7 @@ import {
   SchemeNeutral, SchemeFidelity,
 } from "@material/material-color-utilities";
 import { retiredHeroImages, siteConfig } from "../siteConfig";
+import { normalizeThemeTransition, type ThemeTransitionDirection } from "./theme-transition-preferences";
 
 // Migrate only retired bundled GIF derivatives; custom animations keep their format.
 const retiredAnimatedCovers: Record<string, string> = Object.fromEntries(
@@ -68,6 +69,8 @@ export interface AppearancePreferences {
   waveAmplitude: number;
   waveLayers: number;
   reduceMotion: boolean;
+  themeTransitionDuration: number;
+  themeTransitionDirection: ThemeTransitionDirection;
   fontStyle: keyof typeof fontStyles;
   homeTextScale: number;
   homeCardColor: "theme" | "rose" | "mint" | "sky" | "lavender" | "sand" | "slate" | "custom" | "white" | "black" | "solid";
@@ -109,6 +112,7 @@ export const defaultAppearance: AppearancePreferences = {
   background: "image", texture: "none", textureOpacity: 12, opacity: 96,
   waves: true, coverEffect: "waves", waveSpeed: 100, waveOpacity: 25, waveBackOpacity: 25, waveLayerStyle: "layered", waveAmplitude: 100, waveLayers: 3,
   reduceMotion: false, fontStyle: "rounded",
+  themeTransitionDuration: 650, themeTransitionDirection: "top-left",
   homeTextScale: 100, homeTextWeight: "default", homeCardColor: "theme", homeCardHex: "#ffffff", homeCardHue: 260, homeCardStyle: "tonalSpot", homeCardTone: "theme",
   articleTextScale: 100, articleTextWeight: "default",
   navigationTextScale: 100, navigationTextWeight: "default", coverTextWeight: "default",
@@ -153,6 +157,7 @@ export function normalizeAppearance(input: unknown): AppearancePreferences {
   const replacementVideo = Object.hasOwn(retiredAnimatedCovers, savedMediaUrl) ? retiredAnimatedCovers[savedMediaUrl] : undefined;
   const heroMediaKind = replacementVideo ? "video" : saved.heroMediaKind === "gif" ? "gif" : "video";
   const heroMediaUrl = replacementVideo || savedMediaUrl;
+  const themeTransition = normalizeThemeTransition(saved.themeTransitionDuration, saved.themeTransitionDirection);
   return {
     hue: bounded(saved.hue, 0, 360, defaultAppearance.hue),
     colorStyle: typeof saved.colorStyle === "string" && Object.hasOwn(colorStyles, saved.colorStyle) ? saved.colorStyle as AppearancePreferences["colorStyle"] : defaultAppearance.colorStyle,
@@ -178,6 +183,8 @@ export function normalizeAppearance(input: unknown): AppearancePreferences {
     waveAmplitude: bounded(saved.waveAmplitude, 60, 150, defaultAppearance.waveAmplitude),
     waveLayers: Math.round(bounded(saved.waveLayers, 1, 5, defaultAppearance.waveLayers)),
     reduceMotion: typeof saved.reduceMotion === "boolean" ? saved.reduceMotion : false,
+    themeTransitionDuration: themeTransition.duration,
+    themeTransitionDirection: themeTransition.direction,
     fontStyle: typeof saved.fontStyle === "string" && Object.hasOwn(fontStyles, saved.fontStyle) ? saved.fontStyle as AppearancePreferences["fontStyle"] : defaultAppearance.fontStyle,
     homeTextScale: bounded(saved.homeTextScale, 100, 115, defaultAppearance.homeTextScale),
     homeCardColor: ["rose", "mint", "sky", "lavender", "sand", "slate", "custom", "white", "black", "solid"].includes(String(saved.homeCardColor)) ? saved.homeCardColor as AppearancePreferences["homeCardColor"] : "theme",

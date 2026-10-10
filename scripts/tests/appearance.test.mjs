@@ -27,6 +27,8 @@ const materialColors = loadColorModule(require.resolve("@material/material-color
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const source = await readFile(path.join(root, "lib/appearance.ts"), "utf8");
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+const transitionPreferences = { exports: {} };
+vm.runInNewContext(ts.transpileModule(await readFile(path.join(root, "lib/theme-transition-preferences.ts"), "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, transitionPreferences);
 const sandbox = {
   exports: {},
   URL,
@@ -35,11 +37,26 @@ const sandbox = {
       heroMode: "animated", heroMediaKind: "video", heroMediaUrl: "/videos/covers/evanescia.mp4", live2dCharacter: "cyrene",
     } }, retiredHeroImages: [] };
     if (specifier === "@material/material-color-utilities") return materialColors;
+    if (specifier === "./theme-transition-preferences") return transitionPreferences.exports;
     throw new Error(`Unexpected import: ${specifier}`);
   },
 };
 vm.runInNewContext(compiled, sandbox, { filename: "lib/appearance.ts" });
 const { defaultAppearance, normalizeAppearance } = sandbox.exports;
+test("theme transition preferences preserve old appearance values, clamp durations and restore defaults", () => {
+  const legacy = normalizeAppearance({ hue: 150, reduceMotion: true });
+  assert.equal(legacy.hue, 150);
+  assert.equal(legacy.reduceMotion, true);
+  assert.equal(legacy.themeTransitionDuration, 650);
+  assert.equal(legacy.themeTransitionDirection, "top-left");
+  assert.equal(normalizeAppearance({ themeTransitionDuration: -5 }).themeTransitionDuration, 200);
+  assert.equal(normalizeAppearance({ themeTransitionDuration: 9999 }).themeTransitionDuration, 1600);
+  assert.equal(normalizeAppearance({ themeTransitionDuration: NaN, themeTransitionDirection: "bad" }).themeTransitionDirection, "top-left");
+  const chosen = normalizeAppearance({ themeTransitionDuration: 1200, themeTransitionDirection: "top-right" });
+  assert.equal(chosen.themeTransitionDuration, 1200);
+  assert.equal(chosen.themeTransitionDirection, "top-right");
+  assert.equal(normalizeAppearance(chosen).themeTransitionDirection, "top-right");
+});
 const pickerSandbox = { exports: {} };
 vm.runInNewContext(ts.transpileModule(await readFile(path.join(root, "lib/color-picker.ts"), "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, pickerSandbox);
 const homeSource = await readFile(path.join(root, "lib/home-card-colors.ts"), "utf8");
@@ -65,6 +82,7 @@ test("a static template default works without bundled video or character assets"
       heroMode: "fixed", heroMediaKind: "video", heroMediaUrl: "", live2dCharacter: "off",
     } }, retiredHeroImages: [] };
     if (specifier === "@material/material-color-utilities") return materialColors;
+    if (specifier === "./theme-transition-preferences") return transitionPreferences.exports;
     throw new Error(`Unexpected import: ${specifier}`);
   } };
   vm.runInNewContext(compiled, template, { filename: "lib/appearance.ts" });

@@ -10,7 +10,7 @@ import { runThemeTransition, stopThemeTransition } from "@/lib/theme-transition"
 
 export default function ThemeToggle({ style }: { style?: React.CSSProperties }) {
   const { theme, setTheme } = useTheme();
-  const { reducedMotion } = useAppearance();
+  const { reducedMotion, preferences } = useAppearance();
   const { tx } = useTranslation();
   const desiredTheme = useRef(theme);
   useEffect(() => { desiredTheme.current = theme; }, [theme]);
@@ -19,7 +19,9 @@ export default function ThemeToggle({ style }: { style?: React.CSSProperties }) 
   const toggle = () => {
     const target = desiredTheme.current === "dark" ? "light" : "dark";
     desiredTheme.current = target;
-    runThemeTransition(() => flushSync(() => setTheme(target)), reducedMotion);
+    runThemeTransition(() => flushSync(() => setTheme(target)), reducedMotion, {
+      duration: preferences.themeTransitionDuration, direction: preferences.themeTransitionDirection,
+    });
   };
 
   return <button type="button" onClick={toggle} style={style}
