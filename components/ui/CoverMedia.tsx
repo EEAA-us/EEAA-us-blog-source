@@ -103,7 +103,8 @@ export default function CoverMedia({ image }: { image: string }) {
 
   const current = preferences.heroMode === "slideshow" ? frame.source : preferences.heroMode === "fixed" ? (preferences.heroSlides[0] || image) : image;
   const animated = preferences.heroMode === "animated";
-  return <div ref={rootRef} className="home-cover-media" data-mode={preferences.heroMode}>
+  return <div ref={rootRef} className="home-cover-media" data-mode={preferences.heroMode}
+    data-theme-live-media={animated && validAnimatedMedia && mediaUrl ? "" : undefined}>
     {/* Local WebP assets are already compressed and preloaded before each transition. */}
     {/* eslint-disable-next-line @next/next/no-img-element */}
     {preferences.heroMode === "slideshow" && frame.previous && <img src={frame.previous} alt="" className="home-cover-image" />}

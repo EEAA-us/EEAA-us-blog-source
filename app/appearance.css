@@ -425,7 +425,7 @@ html.theme-switching :is(body, .site-appearance, .theme-background, .theme-backg
   .editorial-panel, .glass-card, .site-nav, .site-nav a, .site-nav button, .site-nav span,
   .appearance-panel, .article-search-dialog, .toolbox-panel, .theme-primary-button, .theme-soft-button) {
   transition-property: background-color, color, border-color, outline-color;
-  transition-duration: var(--theme-transition-duration, 1000ms);
+  transition-duration: var(--theme-transition-duration, 750ms);
   transition-timing-function: cubic-bezier(.22, 1, .36, 1);
 }
 .theme-toggle { position: relative; isolation: isolate; }
@@ -452,13 +452,19 @@ html.theme-wiping::view-transition-old(*),
 html.theme-wiping::view-transition-new(*) { pointer-events: none; }
 html.theme-wiping::view-transition-group(root) { animation: none; }
 html.theme-wiping .theme-toggle-icons svg { transition: none; }
-html.theme-wiping::view-transition-old(root) { animation: none; }
-html.theme-wiping::view-transition-new(root) {
-  mask-image: linear-gradient(var(--theme-reveal-angle, 135deg), #000 45%, transparent 55%);
-  mask-size: 300% 300%; mask-repeat: no-repeat;
-  animation: theme-diagonal-reveal var(--theme-transition-duration, 1000ms) ease-in-out both;
+html.theme-wiping::view-transition-old(root) {
+  animation: none;
+  mask-image: var(--theme-static-mask, none);
+  mask-size: 100% 100%; mask-repeat: no-repeat;
 }
-@keyframes theme-diagonal-reveal { from { mask-position: var(--theme-reveal-from, 82.5% 82.5%); } to { mask-position: var(--theme-reveal-to, 17.5% 17.5%); } }
+html.theme-wiping::view-transition-new(root) {
+  /* The second mask always reveals live media; the soft front still reveals other UI. */
+  mask-image: linear-gradient(var(--theme-reveal-angle, 135deg), #000 45%, transparent 55%), var(--theme-live-mask, linear-gradient(transparent, transparent));
+  mask-size: 300% 300%, 100% 100%; mask-repeat: no-repeat;
+  mask-composite: add;
+  animation: theme-diagonal-reveal var(--theme-transition-duration, 750ms) ease-in-out both;
+}
+@keyframes theme-diagonal-reveal { from { mask-position: var(--theme-reveal-from, 82.5% 82.5%), 0 0; } to { mask-position: var(--theme-reveal-to, 17.5% 17.5%), 0 0; } }
 html.theme-switching .site-appearance[data-reduce-motion="true"],
 html.theme-switching .site-appearance[data-reduce-motion="true"] * { transition-duration: 0s !important; }
 .site-appearance[data-reduce-motion="true"] .theme-toggle-icons svg { transition: none; }

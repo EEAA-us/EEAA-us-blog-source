@@ -1,5 +1,6 @@
 // One short viewport reveal per explicit click; never a continuous canvas loop.
 import { normalizeThemeTransition, themeTransitionDirections } from "./theme-transition-preferences";
+import { themeLiveMediaMasks } from "./theme-live-media";
 let stopCurrent: (() => void) | null = null;
 
 export function stopThemeTransition() {
@@ -18,6 +19,7 @@ export function runThemeTransition(apply: () => void, reducedMotion: boolean, op
     "--theme-reveal-angle": `${reveal.angle}deg`,
     "--theme-reveal-from": reveal.from,
     "--theme-reveal-to": reveal.to,
+    ...(typeof document.startViewTransition === "function" ? themeLiveMediaMasks(document, window.innerWidth, window.innerHeight) : {}),
   };
   for (const [key, value] of Object.entries(properties)) root.style.setProperty(key, value);
   let cancelled = false;

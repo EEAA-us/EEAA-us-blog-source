@@ -71,6 +71,12 @@ test('selected cover attaches and requests playback before load/canplay, and kee
   assert.equal(find(f.tree, 'video').props.style.opacity, 0, 'poster stays until playback starts');
   find(f.tree, 'video').props.onPlaying(); await settle();
   assert.equal(find(f.tree, 'video').props.style.opacity, 1);
+  f.video.currentTime = 17.25;
+  const requests = f.video.plays;
+  f.render(); f.render();
+  assert.equal(f.video.currentTime, 17.25, 'appearance rerenders must not reset the playback clock');
+  assert.equal(f.video.plays, requests, 'unchanged playback props must not restart playback');
+  assert.equal(find(f.tree, 'video').props.style.opacity, 1);
   f.update({ playing: false }); await settle();
   assert.ok(f.video.pauses > 0);
   assert.equal(find(f.tree, 'video').props.src, '/hero.mp4');
@@ -84,6 +90,7 @@ test('selected cover attaches and requests playback before load/canplay, and kee
 
 test('welcome starts the cover immediately; offscreen, hidden and reduced-motion states pause it', async () => {
   const f = fixture(coverCode, 'default', { image: '/fallback.webp' });
+  assert.equal(find(f.tree, 'div').props['data-theme-live-media'], '');
   assert.equal(find(f.tree, 'CoverVideo').props.playing, true, 'welcome does not defer the cover');
   f.sandbox.document.hidden = true; f.render();
   assert.equal(find(f.tree, 'CoverVideo').props.playing, false);

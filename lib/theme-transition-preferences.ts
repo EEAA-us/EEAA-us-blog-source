@@ -13,7 +13,7 @@ export type ThemeTransitionDirection = keyof typeof themeTransitionDirections;
 
 export function normalizeThemeTransition(duration: unknown, direction: unknown) {
   return {
-    duration: typeof duration === "number" && Number.isFinite(duration) ? Math.round(Math.max(200, Math.min(1600, duration))) : 1000,
+    duration: typeof duration === "number" && Number.isFinite(duration) ? Math.round(Math.max(200, Math.min(1600, duration))) : 750,
     direction: typeof direction === "string" && Object.hasOwn(themeTransitionDirections, direction) ? direction as ThemeTransitionDirection : "top-left" as const,
   };
 }

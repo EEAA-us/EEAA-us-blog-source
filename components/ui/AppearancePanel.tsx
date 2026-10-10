@@ -190,6 +190,11 @@ export default function AppearancePanel({ onClose, expanded = false, onToggleExp
           <label className="appearance-range-label">{tx("主题渐变时长")}<span>{(preferences.themeTransitionDuration / 1000).toFixed(2)}{tx("秒")}</span>
             <input aria-label={tx("主题渐变时长")} type="range" min="200" max="1600" step="50" value={preferences.themeTransitionDuration} onChange={event => change({ themeTransitionDuration: Number(event.target.value) })} />
           </label>
+          <button type="button" className="theme-soft-button px-3 py-2 text-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+            aria-label={`${tx("主题渐变时长")}：${tx("恢复默认")}`}
+            onClick={() => change({ themeTransitionDuration: defaultAppearance.themeTransitionDuration })}>
+            {tx("恢复默认")}（{(defaultAppearance.themeTransitionDuration / 1000).toFixed(2)}{tx("秒")}）
+          </button>
           <p className="appearance-help">{tx("时长越短越快，越长越舒缓；开启减少动态时直接切换。")}</p>
           {reducedMotion && <p className="appearance-help">{tx("动画已暂停。若系统开启了减少动态效果，博客也会尊重系统设置。")}</p>}
           <div className="appearance-effect-grid">

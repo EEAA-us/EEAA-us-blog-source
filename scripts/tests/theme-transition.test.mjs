@@ -11,9 +11,11 @@ const compiled = ts.transpileModule(await readFile(new URL('../../lib/theme-tran
 const settle = () => new Promise(resolve => setImmediate(resolve));
 const transitionPreferences = { exports: {} };
 vm.runInNewContext(ts.transpileModule(await readFile(new URL('../../lib/theme-transition-preferences.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, transitionPreferences);
-function fixture(supported = true) {
+const liveMedia = { exports: {} };
+vm.runInNewContext(ts.transpileModule(await readFile(new URL('../../lib/theme-live-media.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, liveMedia);
+function fixture(supported = true, live = false) {
   const classes = new Set(), timers = new Map(), captures = [], styles = new Map();
-  const document = { documentElement: { style: { setProperty: (key, value) => styles.set(key, value), removeProperty: key => styles.delete(key) }, classList: {
+  const document = { querySelector: () => null, querySelectorAll: () => live ? [{ getBoundingClientRect: () => ({ left: 0, top: 64, right: 1920, bottom: 1080 }), closest: () => null }] : [], documentElement: { style: { setProperty: (key, value) => styles.set(key, value), removeProperty: key => styles.delete(key) }, classList: {
     add: (...names) => names.forEach(name => classes.add(name)), remove: (...names) => names.forEach(name => classes.delete(name)),
   } } };
   if (supported) document.startViewTransition = update => {
@@ -23,7 +25,7 @@ function fixture(supported = true) {
     captures.push(capture);
     return capture;
   };
-  const sandbox = { exports: {}, document, require: () => transitionPreferences.exports, setTimeout: (callback, duration) => { const id = timers.size + 1; timers.set(id, { callback, duration }); return id; }, clearTimeout: id => timers.delete(id) };
+  const sandbox = { exports: {}, document, window: { innerWidth: 1920, innerHeight: 1080 }, require: name => name === './theme-live-media' ? liveMedia.exports : transitionPreferences.exports, setTimeout: (callback, duration) => { const id = timers.size + 1; timers.set(id, { callback, duration }); return id; }, clearTimeout: id => timers.delete(id) };
   vm.runInNewContext(compiled, sandbox);
   return { ...sandbox.exports, classes, timers, captures, styles };
 }
@@ -40,6 +42,18 @@ test('rapid theme clicks cancel stale captures and apply only the latest request
   f.captures[1].finish();
   await settle();
   assert.equal(f.classes.size, 0);
+});
+
+test('live media masks survive rapid reversals and are removed when the active transition finishes', async () => {
+  const f = fixture(true, true);
+  f.runThemeTransition(() => {}, false);
+  assert.match(f.styles.get('--theme-live-mask'), /data:image\/svg\+xml/);
+  assert.match(f.styles.get('--theme-static-mask'), /maskUnits/);
+  f.runThemeTransition(() => {}, false);
+  await settle();
+  assert.ok(f.styles.has('--theme-live-mask'), 'a stale completion must not remove active masks');
+  f.captures[1].finish(); await settle();
+  assert.equal(f.styles.size, 0);
 });
 test('reduced motion applies immediately and cancels an outstanding capture', async () => {
   const f = fixture();
@@ -102,10 +116,10 @@ test('all eight mask directions begin transparent and finish opaque in portrait 
   }
 });
 
-test('default reveal lasts one second and a click after completion starts immediately', async () => {
+test('default reveal lasts 0.75 seconds and a click after completion starts immediately', async () => {
   const f = fixture(), applied = [];
   f.runThemeTransition(() => applied.push('dark'), false);
-  assert.equal(f.styles.get('--theme-transition-duration'), '1000ms');
+  assert.equal(f.styles.get('--theme-transition-duration'), '750ms');
   f.captures[0].update();
   f.captures[0].finish();
   await settle();
