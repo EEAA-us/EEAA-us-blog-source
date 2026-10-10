@@ -20,15 +20,15 @@ async function raster(value) {
   const { data, info } = await sharp(Buffer.from(svg)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   return (x, y) => data[(y * info.width + x) * info.channels + info.channels - 1];
 }
-test('live video masks show the new frame throughout the wipe, keep navigation themed, and clip scaled media', async () => {
+test('live video masks stay continuous behind the navbar and clip scaled media to the cover', async () => {
   const masks = themeLiveMediaMasks(documentWith([rectangle(-20, -40, 660, 600)], rectangle(10, 0, 630, 400), rectangle(0, 0, 640, 64)), 640, 480);
   const old = await raster(masks['--theme-static-mask']), live = await raster(masks['--theme-live-mask']);
-  for (const [x, y] of [[20, 80], [320, 200], [620, 390]]) {
+  for (const [x, y] of [[320, 0], [320, 20], [320, 63], [320, 64], [320, 65], [20, 80], [320, 200], [620, 390]]) {
     assert.equal(old(x, y), 0, 'the old frozen frame must be removed');
     assert.equal(live(x, y), 255, 'the live frame stays fully visible at every wipe position');
   }
-  for (const [x, y] of [[320, 20], [5, 200], [635, 200], [320, 450]]) {
-    assert.equal(old(x, y), 255, 'navigation and content retain the directional reveal');
+  for (const [x, y] of [[5, 200], [635, 200], [320, 450]]) {
+    assert.equal(old(x, y), 255, 'regions outside the cover retain the directional reveal');
     assert.equal(live(x, y), 0);
   }
 });

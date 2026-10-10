@@ -47,6 +47,7 @@ test('rapid theme clicks cancel stale captures and apply only the latest request
 test('live media masks survive rapid reversals and are removed when the active transition finishes', async () => {
   const f = fixture(true, true);
   f.runThemeTransition(() => {}, false);
+  assert.ok(f.classes.has('theme-live-media'));
   assert.match(f.styles.get('--theme-live-mask'), /data:image\/svg\+xml/);
   assert.match(f.styles.get('--theme-static-mask'), /maskUnits/);
   f.runThemeTransition(() => {}, false);
@@ -54,6 +55,7 @@ test('live media masks survive rapid reversals and are removed when the active t
   assert.ok(f.styles.has('--theme-live-mask'), 'a stale completion must not remove active masks');
   f.captures[1].finish(); await settle();
   assert.equal(f.styles.size, 0);
+  assert.equal(f.classes.has('theme-live-media'), false);
 });
 test('reduced motion applies immediately and cancels an outstanding capture', async () => {
   const f = fixture();

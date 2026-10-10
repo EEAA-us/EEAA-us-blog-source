@@ -3,9 +3,10 @@ export function themeLiveMediaMasks(document: Document, width: number, height: n
   const rects = [...document.querySelectorAll<HTMLElement>("[data-theme-live-media]")].flatMap(element => {
     const bounds = element.getBoundingClientRect();
     const clip = element.closest(".page-cover")?.getBoundingClientRect() ?? bounds;
-    const nav = document.querySelector(".site-nav")?.getBoundingClientRect();
     const left = Math.max(0, bounds.left, clip.left);
-    const top = Math.max(0, bounds.top, clip.top, nav && nav.bottom > 0 && nav.top <= 0 ? nav.bottom : 0);
+    // Navigation overlays the same video. Cutting out its band would mix a frozen
+    // frame above with the live frame below and create a visible horizontal seam.
+    const top = Math.max(0, bounds.top, clip.top);
     const right = Math.min(width, bounds.right, clip.right);
     const bottom = Math.min(height, bounds.bottom, clip.bottom);
     return right > left && bottom > top ? [{ left, top, width: right - left, height: bottom - top }] : [];

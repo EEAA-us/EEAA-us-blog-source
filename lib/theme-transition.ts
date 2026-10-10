@@ -30,12 +30,13 @@ export function runThemeTransition(apply: () => void, reducedMotion: boolean, op
     cancelled = true;
     clearTimeout(timer.current);
     transition?.skipTransition();
-    root.classList.remove("theme-switching", "theme-wiping");
+    root.classList.remove("theme-switching", "theme-wiping", "theme-live-media");
     for (const key of Object.keys(properties)) root.style.removeProperty(key);
     if (stopCurrent === stop) stopCurrent = null;
   };
   stopCurrent = stop;
   root.classList.add("theme-switching");
+  if ("--theme-live-mask" in properties) root.classList.add("theme-live-media");
   if (typeof document.startViewTransition === "function") {
     root.classList.add("theme-wiping");
     try {
