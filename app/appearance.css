@@ -425,7 +425,7 @@ html.theme-switching :is(body, .site-appearance, .theme-background, .theme-backg
   .editorial-panel, .glass-card, .site-nav, .site-nav a, .site-nav button, .site-nav span,
   .appearance-panel, .article-search-dialog, .toolbox-panel, .theme-primary-button, .theme-soft-button) {
   transition-property: background-color, color, border-color, outline-color;
-  transition-duration: var(--theme-transition-duration, 650ms);
+  transition-duration: var(--theme-transition-duration, 1000ms);
   transition-timing-function: cubic-bezier(.22, 1, .36, 1);
 }
 .theme-toggle { position: relative; isolation: isolate; }
@@ -444,15 +444,21 @@ html.theme-wiping.theme-switching :is(body, .site-appearance, .theme-background,
   .editorial-panel, .glass-card, .site-nav, .site-nav a, .site-nav button, .site-nav span,
   .appearance-panel, .article-search-dialog, .toolbox-panel, .theme-primary-button, .theme-soft-button) { transition-duration: 0s; }
 html.theme-wiping::view-transition-old(root), html.theme-wiping::view-transition-new(root) { mix-blend-mode: normal; }
+/* Snapshots are visual only: another click can immediately cancel/reverse the reveal. */
+html.theme-wiping::view-transition,
+html.theme-wiping::view-transition-group(*),
+html.theme-wiping::view-transition-image-pair(*),
+html.theme-wiping::view-transition-old(*),
+html.theme-wiping::view-transition-new(*) { pointer-events: none; }
 html.theme-wiping::view-transition-group(root) { animation: none; }
 html.theme-wiping .theme-toggle-icons svg { transition: none; }
 html.theme-wiping::view-transition-old(root) { animation: none; }
 html.theme-wiping::view-transition-new(root) {
   mask-image: linear-gradient(var(--theme-reveal-angle, 135deg), #000 45%, transparent 55%);
   mask-size: 300% 300%; mask-repeat: no-repeat;
-  animation: theme-diagonal-reveal var(--theme-transition-duration, 650ms) cubic-bezier(.22, 1, .36, 1) both;
+  animation: theme-diagonal-reveal var(--theme-transition-duration, 1000ms) ease-in-out both;
 }
-@keyframes theme-diagonal-reveal { from { mask-position: var(--theme-reveal-from, 100% 100%); } to { mask-position: var(--theme-reveal-to, 0% 0%); } }
+@keyframes theme-diagonal-reveal { from { mask-position: var(--theme-reveal-from, 82.5% 82.5%); } to { mask-position: var(--theme-reveal-to, 17.5% 17.5%); } }
 html.theme-switching .site-appearance[data-reduce-motion="true"],
 html.theme-switching .site-appearance[data-reduce-motion="true"] * { transition-duration: 0s !important; }
 .site-appearance[data-reduce-motion="true"] .theme-toggle-icons svg { transition: none; }

@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppearance } from "@/components/providers/AppearanceProvider";
 import { siteConfig } from "@/siteConfig";
+import CoverVideo from "@/components/ui/CoverVideo";
+import { useDocumentVisible } from "@/components/ui/useDocumentVisible";
 
 const SESSION_KEY = "welcome-shown";
 
@@ -24,7 +26,8 @@ export default function WelcomeScreen() {
   const preset = mediaCatalog.items.find((item) => item.url === selectedMediaUrl);
   const customMedia = preferences.heroCustomMedia.find((item) => item.url === selectedMediaUrl);
   const animatedKind = customMedia?.kind ?? preset?.kind ?? preferences.heroMediaKind;
-  const customVideo = preferences.heroMode === "animated" && animatedKind === "video" && !preset;
+  const documentVisible = useDocumentVisible();
+  const animated = preferences.heroMode === "animated" && !reducedMotion && documentVisible;
   const welcomeImage = preferences.heroMode === "animated"
     ? preset?.poster || siteConfig.heroImage
     : preferences.heroSlides[0] || siteConfig.heroImage;
@@ -66,7 +69,9 @@ export default function WelcomeScreen() {
             animate={{ scale: 1, opacity: 0.2 }}
             transition={{ duration: reducedMotion ? 0 : 1.2 }}
           >
-            {customVideo && <video src={selectedMediaUrl} muted playsInline preload="auto" className="absolute inset-0 h-full w-full object-cover" />}
+            {animated && animatedKind === "video" && selectedMediaUrl && <CoverVideo key={selectedMediaUrl} src={selectedMediaUrl} poster={welcomeImage} playing={welcomeActive} />}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {animated && animatedKind === "gif" && selectedMediaUrl && <img src={selectedMediaUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />}
           </motion.div>
 
           {/* 内容 */}

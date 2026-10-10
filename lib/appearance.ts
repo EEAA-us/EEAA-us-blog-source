@@ -112,7 +112,7 @@ export const defaultAppearance: AppearancePreferences = {
   background: "image", texture: "none", textureOpacity: 12, opacity: 96,
   waves: true, coverEffect: "waves", waveSpeed: 100, waveOpacity: 25, waveBackOpacity: 25, waveLayerStyle: "layered", waveAmplitude: 100, waveLayers: 3,
   reduceMotion: false, fontStyle: "rounded",
-  themeTransitionDuration: 650, themeTransitionDirection: "top-left",
+  themeTransitionDuration: 1000, themeTransitionDirection: "top-left",
   homeTextScale: 100, homeTextWeight: "default", homeCardColor: "theme", homeCardHex: "#ffffff", homeCardHue: 260, homeCardStyle: "tonalSpot", homeCardTone: "theme",
   articleTextScale: 100, articleTextWeight: "default",
   navigationTextScale: 100, navigationTextWeight: "default", coverTextWeight: "default",

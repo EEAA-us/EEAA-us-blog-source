@@ -71,8 +71,8 @@ test('chosen direction and duration reach the capture, and cleanup leaves no sta
   f.runThemeTransition(() => {}, false, { duration: 1200, direction: 'top-right' });
   assert.equal(f.styles.get('--theme-transition-duration'), '1200ms');
   assert.equal(f.styles.get('--theme-reveal-angle'), '225deg');
-  assert.equal(f.styles.get('--theme-reveal-from'), '0% 100%');
-  assert.equal(f.styles.get('--theme-reveal-to'), '100% 0%');
+  assert.equal(f.styles.get('--theme-reveal-from'), '17.5% 82.5%');
+  assert.equal(f.styles.get('--theme-reveal-to'), '82.5% 17.5%');
   f.captures[0].finish();
   await settle();
   assert.equal(f.styles.size, 0);
@@ -88,16 +88,29 @@ test('all eight mask directions begin transparent and finish opaque in portrait 
     const angle = setting.angle * Math.PI / 180;
     for (const [width, height] of [[1920, 1080], [390, 844]]) {
       const gradientLength = Math.abs(Math.sin(angle)) * width * 3 + Math.abs(Math.cos(angle)) * height * 3;
-      const positions = value => value.split(' ').map(part => parseInt(part, 10) / 100);
+      const positions = value => value.split(' ').map(part => parseFloat(part) / 100);
       const progress = (position, x, y) => {
         const [px, py] = positions(position);
         return ((x + px * width * 2 - width * 1.5) * Math.sin(angle)
           - (y + py * height * 2 - height * 1.5) * Math.cos(angle) + gradientLength / 2) / gradientLength;
       };
       for (const [x, y] of [[0, 0], [width, 0], [0, height], [width, height]]) {
-        assert.ok(progress(setting.from, x, y) >= .55, `${setting.label} must initially hide every viewport corner`);
-        assert.ok(progress(setting.to, x, y) <= .45, `${setting.label} must finally reveal every viewport corner`);
+        assert.ok(progress(setting.from, x, y) >= .55 - 1e-12, `${setting.label} must initially hide every viewport corner`);
+        assert.ok(progress(setting.to, x, y) <= .45 + 1e-12, `${setting.label} must finally reveal every viewport corner`);
       }
     }
   }
+});
+
+test('default reveal lasts one second and a click after completion starts immediately', async () => {
+  const f = fixture(), applied = [];
+  f.runThemeTransition(() => applied.push('dark'), false);
+  assert.equal(f.styles.get('--theme-transition-duration'), '1000ms');
+  f.captures[0].update();
+  f.captures[0].finish();
+  await settle();
+  f.runThemeTransition(() => applied.push('light'), false);
+  f.captures[1].update();
+  assert.deepEqual(applied, ['dark', 'light']);
+  assert.equal(f.timers.size, 0);
 });

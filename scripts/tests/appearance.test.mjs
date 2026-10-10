@@ -47,7 +47,9 @@ test("theme transition preferences preserve old appearance values, clamp duratio
   const legacy = normalizeAppearance({ hue: 150, reduceMotion: true });
   assert.equal(legacy.hue, 150);
   assert.equal(legacy.reduceMotion, true);
-  assert.equal(legacy.themeTransitionDuration, 650);
+  assert.equal(legacy.themeTransitionDuration, 1000);
+  assert.equal(defaultAppearance.themeTransitionDuration, 1000);
+  assert.equal(normalizeAppearance({ themeTransitionDuration: 650 }).themeTransitionDuration, 650, 'saved custom timings remain valid');
   assert.equal(legacy.themeTransitionDirection, "top-left");
   assert.equal(normalizeAppearance({ themeTransitionDuration: -5 }).themeTransitionDuration, 200);
   assert.equal(normalizeAppearance({ themeTransitionDuration: 9999 }).themeTransitionDuration, 1600);
