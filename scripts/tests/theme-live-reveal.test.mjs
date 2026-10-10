@@ -6,9 +6,9 @@ import ts from 'typescript';
 import sharp from 'sharp';
 const preferences = { exports: {} };
 vm.runInNewContext(ts.transpileModule(await readFile(new URL('../../lib/theme-transition-preferences.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, preferences);
-const module = { exports: {}, require: () => preferences.exports };
-vm.runInNewContext(ts.transpileModule(await readFile(new URL('../../lib/theme-live-reveal.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, module);
-const { prepareLiveThemeReveal } = module.exports;
+const liveSandbox = { exports: {}, require: () => preferences.exports };
+vm.runInNewContext(ts.transpileModule(await readFile(new URL('../../lib/theme-live-reveal.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, liveSandbox);
+const { prepareLiveThemeReveal } = liveSandbox.exports;
 function fixture(visible = true) {
   let dark = false;
   const nodes = [], animations = [];
