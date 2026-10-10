@@ -11,23 +11,22 @@ const compiled = ts.transpileModule(await readFile(new URL('../../lib/theme-tran
 const settle = () => new Promise(resolve => setImmediate(resolve));
 const transitionPreferences = { exports: {} };
 vm.runInNewContext(ts.transpileModule(await readFile(new URL('../../lib/theme-transition-preferences.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, transitionPreferences);
-const liveMedia = { exports: {} };
-vm.runInNewContext(ts.transpileModule(await readFile(new URL('../../lib/theme-live-media.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, liveMedia);
-function fixture(supported = true, live = false) {
-  const classes = new Set(), timers = new Map(), captures = [], styles = new Map();
+
+function fixture(supported = true, live = false, pending = false) {
+  const classes = new Set(), timers = new Map(), captures = [], styles = new Map(), reveals = []; let timerId = 0;
   const document = { querySelector: () => null, querySelectorAll: () => live ? [{ getBoundingClientRect: () => ({ left: 0, top: 64, right: 1920, bottom: 1080 }), closest: () => null }] : [], documentElement: { style: { setProperty: (key, value) => styles.set(key, value), removeProperty: key => styles.delete(key) }, classList: {
     add: (...names) => names.forEach(name => classes.add(name)), remove: (...names) => names.forEach(name => classes.delete(name)),
   } } };
   if (supported) document.startViewTransition = update => {
     let finish;
-    const capture = { update, skipped: false, ready: Promise.resolve(), finished: new Promise(resolve => { finish = resolve; }),
+    const capture = { update, skipped: false, ready: pending ? new Promise(() => {}) : Promise.resolve(), finished: new Promise(resolve => { finish = resolve; }),
       skipTransition() { this.skipped = true; finish(); }, finish() { finish(); } };
     captures.push(capture);
     return capture;
   };
-  const sandbox = { exports: {}, document, window: { innerWidth: 1920, innerHeight: 1080 }, require: name => name === './theme-live-media' ? liveMedia.exports : transitionPreferences.exports, setTimeout: (callback, duration) => { const id = timers.size + 1; timers.set(id, { callback, duration }); return id; }, clearTimeout: id => timers.delete(id) };
+  const sandbox = { exports: {}, document, window: { innerWidth: 1920, innerHeight: 1080 }, require: name => name === './theme-live-reveal' ? { prepareLiveThemeReveal: () => { if (!live) return null; const reveal = { stopped: false, play(duration, direction) { this.duration = duration; this.direction = direction; }, stop() { this.stopped = true; } }; reveals.push(reveal); return reveal; } } : transitionPreferences.exports, setTimeout: (callback, duration) => { const id = ++timerId; timers.set(id, { callback, duration }); return id; }, clearTimeout: id => timers.delete(id) };
   vm.runInNewContext(compiled, sandbox);
-  return { ...sandbox.exports, classes, timers, captures, styles };
+  return { ...sandbox.exports, classes, timers, captures, styles, reveals };
 }
 test('rapid theme clicks cancel stale captures and apply only the latest requested theme', async () => {
   const f = fixture(), applied = [];
@@ -44,19 +43,37 @@ test('rapid theme clicks cancel stale captures and apply only the latest request
   assert.equal(f.classes.size, 0);
 });
 
-test('live media masks survive rapid reversals and are removed when the active transition finishes', async () => {
-  const f = fixture(true, true);
-  f.runThemeTransition(() => {}, false);
-  assert.ok(f.classes.has('theme-live-media'));
-  assert.match(f.styles.get('--theme-live-mask'), /data:image\/svg\+xml/);
-  assert.match(f.styles.get('--theme-static-mask'), /maskUnits/);
-  f.runThemeTransition(() => {}, false);
-  await settle();
-  assert.ok(f.styles.has('--theme-live-mask'), 'a stale completion must not remove active masks');
-  f.captures[1].finish(); await settle();
-  assert.equal(f.styles.size, 0);
-  assert.equal(f.classes.has('theme-live-media'), false);
+test('live covers apply each click synchronously, never request a viewport capture, and reverse immediately', async () => {
+  const f = fixture(true, true), applied = [];
+  f.runThemeTransition(() => applied.push('dark'), false, { duration: 750, direction: 'top' });
+  assert.deepEqual(applied, ['dark'], 'a click must apply before runThemeTransition returns');
+  assert.equal(f.captures.length, 0, 'video mode must not wait for snapshot promises');
+  assert.equal(f.reveals[0].direction, 'top');
+  assert.equal([...f.timers.values()][0].duration, 750);
+  f.runThemeTransition(() => applied.push('light'), false, { duration: 750, direction: 'top' });
+  assert.deepEqual(applied, ['dark', 'light']);
+  assert.equal(f.reveals[0].stopped, true);
+  assert.equal(f.timers.size, 1);
+  [...f.timers.values()][0].callback();
+  assert.equal(f.classes.size, 0);
+  f.runThemeTransition(() => applied.push('dark'), false);
+  assert.deepEqual(applied, ['dark', 'light', 'dark'], 'the next click needs no cooldown');
+  f.stopThemeTransition();
 });
+
+test('a stalled static capture is skipped within 120ms and never applies twice', async () => {
+  const f = fixture(true, false, true); let applied = 0;
+  f.runThemeTransition(() => applied++, false);
+  const deadline = [...f.timers.values()][0];
+  assert.equal(deadline.duration, 120);
+  deadline.callback();
+  assert.equal(applied, 1);
+  assert.equal(f.captures[0].skipped, true);
+  f.captures[0].update(); await settle();
+  assert.equal(applied, 1);
+  assert.equal(f.classes.size, 0);
+});
+
 test('reduced motion applies immediately and cancels an outstanding capture', async () => {
   const f = fixture();
   let applied = 0;
@@ -128,5 +145,6 @@ test('default reveal lasts 0.75 seconds and a click after completion starts imme
   f.runThemeTransition(() => applied.push('light'), false);
   f.captures[1].update();
   assert.deepEqual(applied, ['dark', 'light']);
-  assert.equal(f.timers.size, 0);
+  assert.equal([...f.timers.values()][0].duration, 120);
+  f.stopThemeTransition();
 });

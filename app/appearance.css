@@ -443,34 +443,27 @@ html.theme-switching .theme-toggle::before { animation: theme-toggle-glow 600ms 
 html.theme-wiping.theme-switching :is(body, .site-appearance, .theme-background, .theme-background > div,
   .editorial-panel, .glass-card, .site-nav, .site-nav a, .site-nav button, .site-nav span,
   .appearance-panel, .article-search-dialog, .toolbox-panel, .theme-primary-button, .theme-soft-button) { transition-duration: 0s; }
-/* On a live cover, the entire navbar shares one color fade, never a frozen band. */
-html.theme-wiping.theme-switching.theme-live-media .site-nav :is(a, button, span) {
-  transition-property: background-color, color, border-color;
-  transition-duration: var(--theme-transition-duration, 750ms);
-  transition-timing-function: ease-in-out;
-}
+.theme-live-surface { pointer-events: none; transition: none !important; mask-repeat: no-repeat; }
+.theme-live-surface-old { mask-image: linear-gradient(var(--theme-reveal-angle), transparent 45%, #000 55%); }
+.theme-live-surface-new { mask-image: linear-gradient(var(--theme-reveal-angle), #000 45%, transparent 55%); }
 html.theme-wiping::view-transition-old(root), html.theme-wiping::view-transition-new(root) { mix-blend-mode: normal; }
 /* Snapshots are visual only: another click can immediately cancel/reverse the reveal. */
-html.theme-wiping::view-transition,
-html.theme-wiping::view-transition-group(*),
-html.theme-wiping::view-transition-image-pair(*),
-html.theme-wiping::view-transition-old(*),
-html.theme-wiping::view-transition-new(*) { pointer-events: none; }
+::view-transition,
+::view-transition-group(*),
+::view-transition-image-pair(*),
+::view-transition-old(*),
+::view-transition-new(*) { pointer-events: none; }
 html.theme-wiping::view-transition-group(root) { animation: none; }
 html.theme-wiping .theme-toggle-icons svg { transition: none; }
 html.theme-wiping::view-transition-old(root) {
   animation: none;
-  mask-image: var(--theme-static-mask, none);
-  mask-size: 100% 100%; mask-repeat: no-repeat;
 }
 html.theme-wiping::view-transition-new(root) {
-  /* The second mask always reveals live media; the soft front still reveals other UI. */
-  mask-image: linear-gradient(var(--theme-reveal-angle, 135deg), #000 45%, transparent 55%), var(--theme-live-mask, linear-gradient(transparent, transparent));
-  mask-size: 300% 300%, 100% 100%; mask-repeat: no-repeat;
-  mask-composite: add;
+  mask-image: linear-gradient(var(--theme-reveal-angle, 135deg), #000 45%, transparent 55%);
+  mask-size: 300% 300%; mask-repeat: no-repeat;
   animation: theme-diagonal-reveal var(--theme-transition-duration, 750ms) ease-in-out both;
 }
-@keyframes theme-diagonal-reveal { from { mask-position: var(--theme-reveal-from, 82.5% 82.5%), 0 0; } to { mask-position: var(--theme-reveal-to, 17.5% 17.5%), 0 0; } }
+@keyframes theme-diagonal-reveal { from { mask-position: var(--theme-reveal-from, 82.5% 82.5%); } to { mask-position: var(--theme-reveal-to, 17.5% 17.5%); } }
 html.theme-switching .site-appearance[data-reduce-motion="true"],
 html.theme-switching .site-appearance[data-reduce-motion="true"] * { transition-duration: 0s !important; }
 .site-appearance[data-reduce-motion="true"] .theme-toggle-icons svg { transition: none; }

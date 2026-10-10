@@ -78,6 +78,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const setTheme = (newTheme: Theme) => {
     changedDuringLoad.current = true;
     revision.current += 1;
+    // The live reveal reads its new color layers in this same click, before effects.
+    document.documentElement.classList.toggle("dark", newTheme === "dark");
     setThemeState(newTheme);
     try { localStorage.setItem("theme", newTheme); } catch { /* The session theme still changes. */ }
   };

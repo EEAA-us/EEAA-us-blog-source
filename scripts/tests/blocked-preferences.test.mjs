@@ -12,7 +12,9 @@ async function load(name) {
     module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX,
   }}).outputText;
   const blocked = () => { throw new Error('Storage access blocked'); };
+  const themeClasses = new Set();
   const sandbox = { exports: {},
+    document: { documentElement: { classList: { toggle: (key, enabled) => enabled ? themeClasses.add(key) : themeClasses.delete(key) } } },
     window: { matchMedia: () => ({ matches: false }) },
     localStorage: { getItem: blocked, setItem: blocked, removeItem: blocked },
     require(specifier) {
@@ -29,14 +31,17 @@ async function load(name) {
     },
   };
   vm.runInNewContext(compiled, sandbox);
-  return sandbox.exports;
+  return { ...sandbox.exports, themeClasses };
 }
 test('blocked browser storage does not prevent theme rendering or session theme changes', async () => {
-  const { ThemeProvider } = await load('ThemeProvider');
+  const { ThemeProvider, themeClasses } = await load('ThemeProvider');
   const rendered = ThemeProvider({ children: 'article' });
   assert.equal(rendered.props.children, 'article');
   assert.equal(rendered.props.value.theme, 'light');
   assert.doesNotThrow(() => rendered.props.value.setTheme('dark'));
+  assert.equal(themeClasses.has('dark'), true, 'the clicked theme applies in the same task even with blocked storage');
+  rendered.props.value.setTheme('light');
+  assert.equal(themeClasses.has('dark'), false);
 });
 test('blocked browser storage does not crash background and article rendering after hydration', async () => {
   const { BackgroundProvider } = await load('BackgroundProvider');
